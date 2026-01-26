@@ -4,6 +4,7 @@
 
 
 ### Crea venv
+Posizionati in \control-unit-subsystem\MQTT\
 `python3 -m venv .venv`
 
 ---
