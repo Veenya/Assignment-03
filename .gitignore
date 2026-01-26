@@ -90,3 +90,6 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
+
+
+.venv/
