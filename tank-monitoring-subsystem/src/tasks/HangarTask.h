@@ -5,7 +5,6 @@
 #include "model/CommunicationCenter.h"
 #include "model/Hangar.h"
 #include "model/States.h"
-#include "model/UserPanel.h"
 
 /*
  * Task che gestisce la porta dell'hangar.

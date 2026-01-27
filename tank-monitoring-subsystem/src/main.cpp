@@ -4,28 +4,22 @@
 #include "kernel/Scheduler.h"
 #include "model/CommunicationCenter.h"
 #include "model/HWPlatform.h"
-#include "model/UserPanel.h"
 #include "tasks/CommunicationTask.h"
-#include "tasks/HangarTask.h"
-#include "tasks/TemperatureTask.h"
+#include "tasks/SonarTask.h"
 
 
-
-
-
-
-// Scheduler scheduler;
-// HWPlatform* pHWPlatform;
+Scheduler scheduler;
+HWPlatform* pHWPlatform;
 // UserPanel* pUserPanel;
 // Hangar* pHangar;
 // CommunicationCenter* pCommunicationCenter;
 
 void setup() {
     // MsgService.init();
-    // scheduler.init(SCHEDULER_PERIOD);
+    scheduler.init(SCHEDULER_PERIOD);
     // Logger.log(":::::: Drone Hangar ::::::");
-    // pHWPlatform = new HWPlatform();
-    // pHWPlatform->init();
+    pHWPlatform = new HWPlatform();
+    pHWPlatform->init();
 
     // pUserPanel = new UserPanel(pHWPlatform);
     // pUserPanel->init();
@@ -42,12 +36,11 @@ void setup() {
     // Task* pHangarTask = new HangarTask(pCommunicationCenter, pHangar, pUserPanel);
     // pHangarTask->init(DOOR_TASK);
 
-    // Task* pTemperatureTask = new TemperatureTask(pHangar, pUserPanel);
-    // pTemperatureTask->init(TEMPERATURE_TASK);
+    // TODO Task* pSonar = new SonarTask(pHangar, pUserPanel);
+    // pSonar->init(SONAR_TASK);
 
-    // scheduler.addTask(pCommunicationTask);
-    // scheduler.addTask(pHangarTask);
-    // scheduler.addTask(pTemperatureTask);
+
+    // TODO scheduler.addTask(pSonarTask);
 }
 
 void loop() {
