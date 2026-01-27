@@ -7,21 +7,19 @@
 #include "model/HWPlatform.h"
 #include "model/UserPanel.h"
 #include "tasks/CommunicationTask.h"
-#include "tasks/HangarTask.h"
-#include "tasks/TemperatureTask.h"
 
-// Scheduler scheduler;
-// HWPlatform* pHWPlatform;
+Scheduler scheduler;
+HWPlatform* pHWPlatform;
 // UserPanel* pUserPanel;
 // Hangar* pHangar;
 // CommunicationCenter* pCommunicationCenter;
 
 void setup() {
     // MsgService.init();
-    // scheduler.init(SCHEDULER_PERIOD);
+    scheduler.init(SCHEDULER_PERIOD);
     // Logger.log(":::::: Drone Hangar ::::::");
-    // pHWPlatform = new HWPlatform();
-    // pHWPlatform->init();
+    pHWPlatform = new HWPlatform();
+    pHWPlatform->init();
 
     // pUserPanel = new UserPanel(pHWPlatform);
     // pUserPanel->init();
