@@ -1,5 +1,3 @@
-/* Maybe remove? */
-
 #ifndef __STATES__
 #define __STATES__
 

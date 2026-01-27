@@ -40,8 +40,6 @@ public:
 
 private:
     HWPlatform* pHW;
-    Button* pResetButton;
-    LiquidCrystal_I2C* pLcd;
 
     bool resetPressed;      // stato attuale
     bool prevResetPressed;  // stato al tick precedente
