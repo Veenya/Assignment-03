@@ -9,6 +9,11 @@
 #include "tasks/HangarTask.h"
 #include "tasks/TemperatureTask.h"
 
+
+
+
+
+
 // Scheduler scheduler;
 // HWPlatform* pHWPlatform;
 // UserPanel* pUserPanel;
