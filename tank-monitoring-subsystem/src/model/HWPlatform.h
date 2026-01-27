@@ -11,7 +11,7 @@ class HWPlatform {
 public:
     HWPlatform();
 
-    void init();  // inizializza tutto l'hardware (lcd, pins, ecc.)
+    void init();  // inizializza tutto l'hardware (pins, ecc.)
 
     /* ---------------------------------- ACCESSO AI DEVICE ---------------------------------- */
     Sonar* getDDD();
