@@ -1,3 +1,7 @@
+#ifndef __MQTT_PUBLISHER__
+#define __MQTT_PUBLISHER__
+
+
 #include "kernel/MQTTservice.h"
 
 class MQTTpublisher : public MQTTservice {
@@ -13,3 +17,5 @@ public:
 
     void publishJSON(const char* topic, const char* JSONfield, const char* JSONvalue);
 };
+
+#endif
