@@ -2,6 +2,15 @@
 #ifndef __CONFIG__
 #define __CONFIG__
 
+
+//! Impostare l'ip del pc
+#define DEFAULT_MQTT_SERVER  "192.168.1.98"
+
+
+
+
+#define ESP_BAUD             115200
+
 #define SCHEDULER_PERIOD     100 // interrupt fa ripartire lo scheduler ogni n millisecondi
 #define STATE_UPDATE_PERIOD  500 // periodo di invio stato da CommunicationCenter in ms
 
@@ -30,5 +39,14 @@
 #define WIFI_PASSWORD      "cicciopasticcio"
 
 #define MAX_TIME_US    10 // TODO capire a cosa serviva e se serve ancora
+
+#define MQTT_PORT      1883
+
+#define FREQUENCY_FIELD      "freq"
+#define WATER_LEVEL_FIELD    "WL"
+#define FREQ_TOPIC           "/sensor/freq"
+#define WL_TOPIC             "/sensor/wl"
+#define PUBLISHER_CLIENT_ID  "espPublisher"
+#define SUBSCRIBER_CLIENT_ID "espSubscriber"
 
 #endif
