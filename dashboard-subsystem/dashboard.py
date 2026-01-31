@@ -51,7 +51,8 @@ app.layout = html.Div([
             html.Button("Set Auto-mode", id="send-autoMode", n_clicks=0, className="button-17 button-17-red")
     ], style={"display": "flex", "justify-content": "center", "align-items": "center"}),
     html.Div(id="dummy-output", style={"display": "none"}),
-    html.Div(id="dummy-output1", style={"display": "none"})
+    html.Div(id="dummy-output1", style={"display": "none"}),
+    dcc.Store(id="mode-store", data={"isManual": True})
 ])
 
 # Gestisci le richieste POST del server
@@ -73,21 +74,41 @@ def get_post_data(n_intervals):
     print(data_queue)
     return [""]
 
-@app.callback([
-        Output("dummy-output", "children"),
-        Input("send-autoMode", "n_clicks")
-        ])
-def send_manualMode(n_clicks):
+### ----------- Bottone per settare la Auto-Mode ----------- ###
+@app.callback(
+    Output("mode-store", "data"),
+    Output("dummy-output", "children"),
+    Output("send-autoMode", "children"),
+    Input("send-autoMode", "n_clicks"),
+    State("mode-store", "data"),
+    prevent_initial_call=True
+)
+def toggle_mode(n_clicks, store):
+    # stato attuale
+    is_manual = bool(store.get("isManual", True))
+
+    # toggle
+    new_is_manual = not is_manual
+
+    # manda al backend
     url = "http://localhost:8050/api/postdata"
-    if n_clicks is None:
-        return [""]
-    else:
-        data = {
-            "isManual": False
-        }
-        response = requests.post(url, data=json.dumps(data), headers={"Content-Type": "application/json"})
-        print(response.text)
-        return [f"Sent request with response: {response.text}"]
+    payload = {"isManual": new_is_manual}
+
+    try:
+        r = requests.post(url, json=payload, timeout=2)
+        msg = f"Sent isManual={new_is_manual} -> {r.status_code} {r.text}"
+    except requests.RequestException as e:
+        # se il backend non risponde, non cambiare lo stato
+        return store, f"POST failed: {e}", no_update
+
+    # testo del bottone in base al nuovo stato
+    button_text = "Switch to AUTO" if new_is_manual else "Switch to MANUAL"
+
+    print(new_is_manual)
+
+    return {"isManual": new_is_manual}, msg, button_text
+    
+### ----------- Bottone per settare la Valve Value ----------- ###
 
 @app.callback(Output("send-valveValue", "value"),
               [Input("send-valveValue", "n_clicks")],
@@ -99,8 +120,9 @@ def send_valveValue(n_clicks, valveValue):
             "valveValue": valveValue
         }
         response = requests.post(url, data=json.dumps(data), headers={"Content-Type": "application/json"})
-        print(response.text)
-# Aggiorna il grafico del livello dell'acqua in tempo reale
+        print(valveValue)
+
+# ----------- Aggiorna il grafico del livello dell'acqua in tempo reale -----------
 @app.callback(Output("water-level-graph", "figure"),
               [Input("interval-component", "n_intervals")])
 def update_water_level_graph(n):
@@ -125,7 +147,7 @@ def update_water_level_graph(n):
 
     return fig
 
-# Aggiorna il grafico del livello della valvola in tempo reale
+# ----------- Aggiorna il grafico del livello della valvola in tempo reale -----------
 @app.callback(Output("valve-level-graph", "figure"),
               [Input("interval-component", "n_intervals")])
 def update_valve_level_graph(n):

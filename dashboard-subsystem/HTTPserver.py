@@ -2,20 +2,24 @@ import requests
 import json
 import random
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer   # Importa gli strumenti per creare un piccolo server HTTP: HTTPServer e BaseHTTPRequetHandler (per gestire GET, POST, ...)
 import threading
 
-class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):   # Classe che gestisce le richieste HTTP in arrivo
 
+    # Definisce cosa fare quando arriva una richiesta POST al server
     def do_POST(self):
+        # Legge l'header HTTP Content-Lenght, che dice quanti byte contiene il corpo della richiesta
         content_length = int(self.headers['Content-Length'])
+        # Leggo dall'oggetto rfile esattamente quel numero di byte
         post_data = self.rfile.read(content_length)
+        # Converto quei byte in un dict python
         data = json.loads(post_data)
 
-        print("Received data: ", data)
+        print("Received data: ", data) # Printo quello che ho ottenuto
 
-        self.send_response(200)
-        self.end_headers()
+        self.send_response(200) # Dico che e' tutto ok
+        self.end_headers()      # chiude la parte degli header HTTP della risposta
         self.wfile.write(b'Success')
 
 # Inizializza il server HTTP
