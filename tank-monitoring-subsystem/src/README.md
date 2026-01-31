@@ -11,3 +11,6 @@ cd "C:\Program Files\mosquitto"
 mosquitto.exe -v
 (il -v mostra log dettagliati; premi Ctrl+C per fermarlo quando hai finito il test)
 Per default Mosquitto ascolta su localhost:1883 (porta MQTT standard, senza autenticazione).
+
+mosquitto_sub -h 192.168.1.98 -p 1883 -t "/sensor/freq" -v
+
