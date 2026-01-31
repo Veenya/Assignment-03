@@ -24,6 +24,8 @@ public:
     /* --- Water State ---*/
     void setWaterState(WaterState state);
     WaterState getWaterState();
+    float getDistance();
+    MQTTState getMQTTState();
 /*
 The rainwater level are sampled at frequency F and sent to the CUS subsystem.
 When the system is working correctly (network ok, sending data ok) 
@@ -31,36 +33,27 @@ the green led is on and the red is off;
 otherwise – in the case of network problems – the red led should be on and the green led off.
 */
 
-    void raiseAlarm();
-    void resetAlarm();
 
     void setL1On();
-    void setL2Blinking();
-    void setL3On();
-
+    void setL2On();
     void setL1Off();
     void setL2Off();
-    void setL3Off();
-    ButtonImpl* getResetButton();
 
 private:
     HWPlatform* pHW;
-    DroneState droneState;
-    DoorState doorState;
-    HangarState hangarState;
-    ButtonImpl* pResetButton;
+    WaterState waterState;
+    MQTTState mqttState;
+
 
     bool L1isOn;
-    bool L2isBlinking;
-    bool L3isOn;
+    bool L2isOn;
     bool doorOpen;
     float lastDistance;
     float currentTemp;
     float lastTemperature;
     bool alarmRaised;
     void manageLeds();
-    void manageAlarm();
-    void manageDoor();
+
 };
 
 #endif

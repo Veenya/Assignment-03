@@ -1,34 +1,34 @@
 #include <Arduino.h>
 #include "config.h"
+#include "kernel/Scheduler.h"
 #include "model/HWPlatform.h"
-// #include "kernel/MQTTpublisher.h"
-// #include "kernel/MQTTsubscriber.h"
-// #include "kernel/WiFiConnection.h"
+#include "model/Monitor.h"
+#include "tasks/MonitorTask.h"
+#include "tasks/SonarTask.h"
+
 // #include "kernel/Logger.h"
 // #include "kernel/MsgService.h"
-// #include "kernel/Scheduler.h"
 // #include "model/CommunicationCenter.h"
 // #include "tasks/CommunicationTask.h"
-// #include "tasks/SonarTask.h"
 
-// Scheduler scheduler;
 HWPlatform* pHWPlatform;
-
+Scheduler scheduler;
+Monitor* pMonitor;
 
 // UserPanel* pUserPanel;
-// Hangar* pHangar;
 // CommunicationCenter* pCommunicationCenter;
 
-
+unsigned long lastPublish = 0;
+const unsigned long PUBLISH_INTERVAL = 5000;  // ogni 5 secondi
 
 void setup() {
     // MsgService.init();
-    // scheduler.init(SCHEDULER_PERIOD);
     // Logger.log(":::::: Tank Monitoring Subsystem ::::::");
     Serial.begin(ESP_BAUD);
     delay(200);
     Serial.println("\n=== TEST WiFi + MQTT MINIMALE ===\n");
-
+    
+    scheduler.init(SCHEDULER_PERIOD);
     pHWPlatform = new HWPlatform();
     pHWPlatform->init();
 
@@ -36,8 +36,8 @@ void setup() {
     // pUserPanel = new UserPanel(pHWPlatform);
     // pUserPanel->init();
 
-    // pHangar = new Hangar(pHWPlatform);
-    // pHangar->init();
+    pMonitor = new Monitor(pHWPlatform);
+    pMonitor->init();
 
     // pCommunicationCenter = new CommunicationCenter(pHangar);
     // pCommunicationCenter->init();
@@ -45,14 +45,15 @@ void setup() {
     // Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pHangar);
     // pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    // Task* pHangarTask = new HangarTask(pCommunicationCenter, pHangar, pUserPanel);
-    // pHangarTask->init(DOOR_TASK);
+    Task* pSonarTask = new SonarTask(pMonitor);
+    pSonarTask->init(SONAR_TASK);
 
-    // TODO Task* pSonar = new SonarTask(pHangar, pUserPanel);
-    // pSonar->init(SONAR_TASK);
+    Task* pMonitorTask = new MonitorTask(pMonitor);
+    pMonitorTask->init(MONITOR_TASK);
 
-    // TODO scheduler.addTask(pSonarTask);
 
+    // scheduler.addTask(pSonarTask);
+    // scheduler.addTask(pMonitorTask);
     
 
     Serial.println("\n=== SETUP OK ===\n");
@@ -60,29 +61,27 @@ void setup() {
 
 void loop() {
     // scheduler.schedule();
-    // pMQTTpublisher->loop();   // o publisher->client.loop() se il wrapper lo espone
-    // pMQTTsubscriber->loop();  // idem
 
-    // // Esempio di publish periodico
-    // unsigned long now = millis();
-    // if (now - lastPublish >= PUBLISH_INTERVAL) {
-    //     lastPublish = now;
+     // Esempio di publish periodico
+    unsigned long now = millis();
+    if (now - lastPublish >= PUBLISH_INTERVAL) {
+        lastPublish = now;
 
-    //     if (pMQTTpublisher->connected()) {
-    //         const char* testTopic = FREQ_TOPIC;
-    //         const char* testMsg = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
+        if (pHWPlatform->getMQTTpublisher()->connected()) {
+            const char* testTopic = FREQ_TOPIC;
+            const char* testMsg = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
 
-    //         Serial.print("Publish su ");
-    //         Serial.print(testTopic);
-    //         Serial.print(" → ");
-    //         Serial.println(testMsg);
+            Serial.print("Publish su ");
+            Serial.print(testTopic);
+            Serial.print(" → ");
+            Serial.println(testMsg);
 
-    //         pMQTTpublisher->publish(testTopic, testMsg);  // usa il metodo semplice
-    //         // Oppure publisher->publishJSON(...) se preferisci il tuo formato JSON
-    //     } else {
-    //         Serial.println("Publisher non connesso → skip publish");
-    //     }
-    // }
+            pHWPlatform->getMQTTpublisher()->publish(testTopic, testMsg);  // usa il metodo semplice
+            // Oppure publisher->publishJSON(...) se preferisci il tuo formato JSON
+        } else {
+            Serial.println("Publisher non connesso → skip publish");
+        }
+    }
 
     // delay(10);  // piccolo respiro (non bloccante)
 }

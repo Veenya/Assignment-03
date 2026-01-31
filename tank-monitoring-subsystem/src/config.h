@@ -23,13 +23,14 @@
 
 #define COMMUNICATION_PERIOD 500       // tempo tick communication center
 #define SONAR_TASK           1000      // tempo misurazione livello acqua
+#define MONITOR_TASK         1000      // tempo tempo gestione canali
 #define SONAR_NO_OBJ_DETECTED -1
 
 
 // Livelli acqua
 #define L1 10
 #define L2 20
-// #define T1 5
+#define TIME1 5
 #define DEBUG_LEVEL 20
 
 #define MAXTEMP      40                 // temperatura oltre la quale scatta prealarm e poi alarm

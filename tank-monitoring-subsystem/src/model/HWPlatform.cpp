@@ -6,16 +6,18 @@
 // void wakeUp() {}
 
 HWPlatform::HWPlatform() {
-    // pDdd = new Sonar(SONAR_ECHO_PIN, SONAR_TRIG_PIN, MAX_TIME_US);
-    // pL1 = new Led(L1_PIN);
-    // pL2 = new Led(L2_PIN);
+    pDdd = new Sonar(SONAR_ECHO_PIN, SONAR_TRIG_PIN, MAX_TIME_US);
+    pL1 = new Led(L1_PIN);
+    pL2 = new Led(L2_PIN);
     pWiFiConnection = new WiFiConnection(WIFI_SSID, WIFI_PASSWORD);
     pMQTTsubscriber = new MQTTsubscriber(DEFAULT_MQTT_SERVER, SUBSCRIBER_CLIENT_ID);
     pMQTTpublisher = new MQTTpublisher(DEFAULT_MQTT_SERVER, PUBLISHER_CLIENT_ID);
     Serial.println("HWPlatform istanziata");
+    MQTTState mqttState = MQTTState::KO;
 }
 
 void HWPlatform::init() {
+    // TODO decidere se spostare in Communication Center
     Serial.println("\n=== WiFiConnection ===\n");
     pWiFiConnection->setup_wifi();
 
@@ -32,25 +34,19 @@ void HWPlatform::init() {
 
     pMQTTpublisher->connect();
     pMQTTsubscriber->connect();
-    pMQTTsubscriber->begin();  // ← sostituisce subscribeJSON
+    pMQTTsubscriber->begin();
 
-    // In loop() o nella task subscriber
+    pMQTTpublisher->loop();
     pMQTTsubscriber->loop();
 
     // MQTT Publisher
-    Serial.println("Connessione MQTT publisher...");
-    if (pMQTTpublisher->connected()) {
-        Serial.println("Publisher connesso");
+    Serial.println("Connessione MQTT publisher e subscriber ...");
+    if (pMQTTpublisher->connected() && pMQTTsubscriber->connected()) {
+        mqttState = MQTTState::CONNECTED;
+        Serial.println("Publisher e subscriber connessi");
     } else {
-        Serial.println("Publisher NON connesso");
-    }
-
-    // MQTT Subscriber
-    Serial.println("Connessione MQTT subscriber...");
-    if (pMQTTsubscriber->connected()) {
-        Serial.println("Subscriber connesso");
-    } else {
-        Serial.println("Subscriber NON connesso");
+        mqttState = MQTTState::KO;
+        Serial.println("Errore nella connessione");
     }
 
     Serial.println("HWPlatform inizializzata");
@@ -77,3 +73,7 @@ MQTTsubscriber* HWPlatform::getMQTTsubscriber() {
 MQTTpublisher* HWPlatform::getMQTTpublisher() {
     return this->pMQTTpublisher;
 };
+
+MQTTState HWPlatform::getMQTTState() {
+    return this->mqttState;
+}
