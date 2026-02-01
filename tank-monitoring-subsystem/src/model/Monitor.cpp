@@ -14,7 +14,7 @@ void Monitor::init() {
     alarmRaised = false;
 
     if (SVILUPPO) {
-        Serial.println("Door and Led TEST");
+        Serial.println("Led TEST");
 
         pHW->getL1()->switchOn();
         pHW->getL2()->switchOn();
