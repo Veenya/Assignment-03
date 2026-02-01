@@ -1,15 +1,19 @@
-How to run HTTPserver.py
-pip install requets
-.\.venv\Scripts\python.exe .\HTTPserver.py
-
-
-How to run dashboard.py
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe .\dashboard.py
+How to test this
+open 3 DIFFERENT terminals and start them in this order:
+python backend.py
+python simulator.py
+python dashboard.py
 
 
 poi apri: http://localhost:8057
+
+copypaste version
+cd .\control-unit-subsystem\HTTP\
+python backend.py
+python simulator.py
+cd .\dashboard-subsystem\  
+python dashboard.py
+http://localhost:8057
 
 ---
 

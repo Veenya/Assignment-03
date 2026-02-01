@@ -7,6 +7,8 @@ from collections import deque
 import datetime
 import requests
 
+#TODO: disable slider and valve button if we are in auto 
+
 data_queue = deque(maxlen=60)
 
 server = Flask(__name__)
