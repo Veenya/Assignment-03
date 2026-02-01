@@ -9,7 +9,7 @@ CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, 
 }
 
 void CommunicationTask::tick() {
-    // 2) invia periodicamente lo stato corrente
+    // invia periodicamente lo stato corrente
     lastStateUpdate = 0;
     now = millis();
 

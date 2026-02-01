@@ -6,7 +6,6 @@ HWPlatform::HWPlatform() {
     pL1 = new Led(L1_PIN);
     pL2 = new Led(L2_PIN);
     Serial.println("HWPlatform istanziata");
-    
 }
 
 void HWPlatform::init() {

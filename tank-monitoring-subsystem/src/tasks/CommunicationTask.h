@@ -16,12 +16,10 @@ private:
     unsigned long now;
     void setWaterState(WaterState waterState);
     long elapsedTimeInState();
-
-    WaterState waterState;
-    MQTTState mqttState;
     long waterStateTimestamp;
     bool justEntered;
-
+    WaterState waterState;
+    MQTTState mqttState;
     CommunicationCenter* pCommunicationCenter;
     Controller* pController;
 };

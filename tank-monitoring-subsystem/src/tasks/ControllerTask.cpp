@@ -5,24 +5,15 @@
 
 ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter)
     : pController(pController), pCommunicationCenter(pCommunicationCenter) {
-    // pController->setDoorState(DoorState::CLOSED);
     pHW = pController->getHWPlatform();
 }
 
 void ControllerTask::tick() {
     this->waterState = pController->getWaterState();
-    this->mqttState = pController->getMQTTState();
-
-    if (mqttState == MQTTState::KO) {
-        Serial.println("Problemi con l'MQTT");  // TODO espandere e migliorare
-    } 
+    manageLeds();
 }
 
-// long ControllerTask::elapsedTimeInState() {
-//     return millis() - stateTimestamp;
-// }
 void ControllerTask::manageLeds() {
-    // Led1 Verde
     if (pCommunicationCenter->getMQTTState() == MQTTState::CONNECTED) {
         pHW->getL1()->switchOn();
         pHW->getL2()->switchOff();
@@ -31,3 +22,7 @@ void ControllerTask::manageLeds() {
         pHW->getL1()->switchOff();
     }
 }
+
+// long ControllerTask::elapsedTimeInState() {
+//     return millis() - stateTimestamp;
+// }

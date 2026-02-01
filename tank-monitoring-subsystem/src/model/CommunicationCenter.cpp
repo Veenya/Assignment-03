@@ -3,7 +3,6 @@
 // #include "kernel/Logger.h"
 // #include "kernel/MsgService.h"
 
-
 CommunicationCenter::CommunicationCenter(Controller* pController) : pController(pController) {
     pWiFiConnection = new WiFiConnection(WIFI_SSID, WIFI_PASSWORD);
     pMQTTsubscriber = new MQTTsubscriber(DEFAULT_MQTT_SERVER, SUBSCRIBER_CLIENT_ID);
@@ -66,8 +65,8 @@ void CommunicationCenter::notifyNewState() {
         Serial.print("Publish su " FREQ_TOPIC " → ");
         Serial.println(message);
 
-        pMQTTpublisher->publish(FREQ_TOPIC, message);  // usa il metodo semplice
-        // Oppure publisher->publishJSON(...) se preferisci il tuo formato JSON
+        pMQTTpublisher->publish(FREQ_TOPIC, message);  // metodo semplice
+        // publisher->publishJSON(...) altrimenti JSON
     } else {
         Serial.println("Publisher non connesso → skip publish");
     }

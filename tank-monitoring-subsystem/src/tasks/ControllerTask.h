@@ -6,17 +6,12 @@
 #include "model/Controller.h"
 #include "model/States.h"
 
-
 class ControllerTask : public Task {
 public:
     ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter);
     void tick();
 
 private:
-    // void setDoorState(DoorState state);
-    // long elapsedTimeInState();
-
-    bool droneInRange;
     long stateTimestamp;
     void manageLeds();
     Controller* pController;
@@ -24,6 +19,7 @@ private:
     WaterState waterState;
     MQTTState mqttState;
     CommunicationCenter* pCommunicationCenter;
+    // long elapsedTimeInState();
 };
 
 #endif
