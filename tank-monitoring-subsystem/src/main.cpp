@@ -48,7 +48,7 @@ void setup() {
     Task* pSonarTask = new SonarTask(pController);
     pSonarTask->init(SONAR_TASK);
 
-    Task* pControllerTask = new ControllerTask(pController);
+    Task* pControllerTask = new ControllerTask(pController, pCommunicationCenter);
     pControllerTask->init(CONTROLLER_TASK);
 
 
@@ -62,26 +62,7 @@ void setup() {
 void loop() {
     // scheduler.schedule();
 
-     // Esempio di publish periodico
-    unsigned long now = millis();
-    if (now - lastPublish >= PUBLISH_INTERVAL) {
-        lastPublish = now;
-
-        if (pHWPlatform->getMQTTpublisher()->connected()) {
-            const char* testTopic = FREQ_TOPIC;
-            const char* testMsg = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
-
-            Serial.print("Publish su ");
-            Serial.print(testTopic);
-            Serial.print(" → ");
-            Serial.println(testMsg);
-
-            pHWPlatform->getMQTTpublisher()->publish(testTopic, testMsg);  // usa il metodo semplice
-            // Oppure publisher->publishJSON(...) se preferisci il tuo formato JSON
-        } else {
-            Serial.println("Publisher non connesso → skip publish");
-        }
-    }
+    
 
     // delay(10);  // piccolo respiro (non bloccante)
 }

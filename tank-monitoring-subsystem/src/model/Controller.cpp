@@ -54,6 +54,10 @@ MQTTState Controller::getMQTTState() {
     return this->mqttState;
 }
 
+HWPlatform* Controller::getHWPlatform() {
+    return this->pHW;
+}
+
 void Controller::setL1On() {
     this->L1isOn = true;
 }
@@ -70,17 +74,7 @@ void Controller::setL2Off() {
 }
 
 
-void Controller::manageLeds() {
-    // Led1 Verde
-    if (pHW->getMQTTState() == MQTTState::CONNECTED) {
-        pHW->getL1()->switchOn();
-        pHW->getL2()->switchOff();
-    } else {
-        pHW->getL2()->switchOn();
-        pHW->getL1()->switchOff();
-    }
 
-}
 
 // void Controller::manageDoor() {
 //     switch (doorState) {

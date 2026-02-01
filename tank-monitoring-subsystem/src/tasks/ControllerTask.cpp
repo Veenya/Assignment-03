@@ -3,8 +3,10 @@
 #include "config.h"
 // #include "kernel/Logger.h"
 
-ControllerTask::ControllerTask(Controller* pController) : pController(pController) {
+ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter)
+    : pController(pController), pCommunicationCenter(pCommunicationCenter) {
     // pController->setDoorState(DoorState::CLOSED);
+    pHW = pController->getHWPlatform();
 }
 
 void ControllerTask::tick() {
@@ -12,16 +14,20 @@ void ControllerTask::tick() {
     this->mqttState = pController->getMQTTState();
 
     if (mqttState == MQTTState::KO) {
-        Serial.println("Problemi con l'MQTT"); // TODO espandere e migliorare
-    } else if (waterState == WaterState::Low) {
-        Serial.println("TUTTO OK"); // TODO espandere e migliorare
-    } else if (waterState == WaterState::Medium) {
-        Serial.println("TUTTO OK"); // TODO espandere e migliorare
-    } else if (waterState == WaterState::High) {
-        Serial.println("TUTTO OK"); // TODO espandere e migliorare
+        Serial.println("Problemi con l'MQTT");  // TODO espandere e migliorare
     } 
 }
 
 // long ControllerTask::elapsedTimeInState() {
 //     return millis() - stateTimestamp;
 // }
+void ControllerTask::manageLeds() {
+    // Led1 Verde
+    if (pCommunicationCenter->getMQTTState() == MQTTState::CONNECTED) {
+        pHW->getL1()->switchOn();
+        pHW->getL2()->switchOff();
+    } else {
+        pHW->getL2()->switchOn();
+        pHW->getL1()->switchOff();
+    }
+}

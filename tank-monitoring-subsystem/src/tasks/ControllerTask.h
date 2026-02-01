@@ -2,14 +2,14 @@
 #define __CONTROLLER_TASK__
 
 #include "kernel/Task.h"
-// #include "model/CommunicationCenter.h"
+#include "model/CommunicationCenter.h"
 #include "model/Controller.h"
 #include "model/States.h"
 
 
 class ControllerTask : public Task {
 public:
-    ControllerTask(Controller* pController);
+    ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter);
     void tick();
 
 private:
@@ -17,13 +17,13 @@ private:
     // long elapsedTimeInState();
 
     bool droneInRange;
-
-    // ControllerState cotrollerState;
     long stateTimestamp;
-
+    void manageLeds();
     Controller* pController;
+    HWPlatform* pHW;
     WaterState waterState;
     MQTTState mqttState;
+    CommunicationCenter* pCommunicationCenter;
 };
 
 #endif

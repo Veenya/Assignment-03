@@ -4,23 +4,20 @@
 #include "HWPlatform.h"
 #include "config.h"
 #include "model/Controller.h"
+#include "kernel/MQTTpublisher.h"
+#include "kernel/MQTTsubscriber.h"
+#include "kernel/WiFiConnection.h"
 
-/*
- * Classe che comunica con il con il DRU (Drone Remote Unit) sul PC.
- * - Riceve comandi testuali via seriale (TAKEOFF, LANDING, RESET).
- * - Espone metodi "checkAndReset..." per i Task.
- * - Invia periodicamente lo stato corrente al DRU.
- */
 class CommunicationCenter {
 public:
     CommunicationCenter(Controller* pController);
     void init();
-    void sync();
     void notifyNewState();
 
-    bool checkAndResetOpenDoorRequest();  // TODO eliminare
-
-
+    WiFiConnection* getWiFiConnection();
+    MQTTsubscriber* getMQTTsubscriber();
+    MQTTpublisher* getMQTTpublisher();
+    MQTTState getMQTTState();
 
 private:
     Controller* pController;
@@ -28,6 +25,9 @@ private:
     float currentDistance;
     WaterState waterState;
     MQTTState mqttState;
+    WiFiConnection* pWiFiConnection;
+    MQTTsubscriber* pMQTTsubscriber;
+    MQTTpublisher* pMQTTpublisher;
 };
 
 #endif

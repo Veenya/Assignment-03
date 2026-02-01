@@ -6,12 +6,6 @@
 #include "model/Controller.h"
 #include "model/States.h"
 
-/*
- * Task che gestisce la comunicazione con il DRU (Drone Remote Unit).
- * - legge i comandi dal PC (take-off, landing, reset...)
- * - aggiorna lo stato del drone nell'hangar
- * - notifica al DRU lo stato corrente (drone, hangar, distanza)
- */
 class CommunicationTask : public Task {
 public:
     CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController);
@@ -20,7 +14,7 @@ public:
 private:
     unsigned long lastStateUpdate;
     unsigned long now;
-    void setState(WaterState waterState);
+    void setWaterState(WaterState waterState);
     long elapsedTimeInState();
 
     WaterState waterState;

@@ -5,16 +5,11 @@
 
 CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController)
     : pCommunicationCenter(pCommunicationCenter), pController(pController) {
-    setState(WaterState::Low);
+    setWaterState(WaterState::Low);
 }
 
 void CommunicationTask::tick() {
-    // 1) aggiorna informazioni dal canale seriale / remoto
-    if (pCommunicationCenter) {
-        pCommunicationCenter->sync();  // leggere eventuali messaggi in arrivo dal DRU
-    }
-
-    // 2) invia periodicamente lo stato corrente al DRU
+    // 2) invia periodicamente lo stato corrente
     lastStateUpdate = 0;
     now = millis();
 
@@ -24,7 +19,7 @@ void CommunicationTask::tick() {
     }
 }
 
-void CommunicationTask::setState(WaterState waterState) {
+void CommunicationTask::setWaterState(WaterState waterState) {
     this->waterState = waterState;
     waterStateTimestamp = millis();
     justEntered = true;

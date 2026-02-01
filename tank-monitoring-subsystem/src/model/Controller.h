@@ -26,6 +26,8 @@ public:
     WaterState getWaterState();
     float getDistance();
     MQTTState getMQTTState();
+
+    HWPlatform* getHWPlatform();
 /*
 The rainwater level are sampled at frequency F and sent to the CUS subsystem.
 When the system is working correctly (network ok, sending data ok) 

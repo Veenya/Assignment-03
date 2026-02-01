@@ -1,85 +1,88 @@
 #include "CommunicationCenter.h"
 #include <Arduino.h>
-#include "kernel/Logger.h"
-#include "kernel/MsgService.h"
+// #include "kernel/Logger.h"
+// #include "kernel/MsgService.h"
 
-CommunicationCenter::CommunicationCenter(Controller* pController) : pController(pController) {}
+
+CommunicationCenter::CommunicationCenter(Controller* pController) : pController(pController) {
+    pWiFiConnection = new WiFiConnection(WIFI_SSID, WIFI_PASSWORD);
+    pMQTTsubscriber = new MQTTsubscriber(DEFAULT_MQTT_SERVER, SUBSCRIBER_CLIENT_ID);
+    pMQTTpublisher = new MQTTpublisher(DEFAULT_MQTT_SERVER, PUBLISHER_CLIENT_ID);
+    MQTTState mqttState = MQTTState::KO;
+    Serial.println("Communication Center istanziato");
+}
 
 void CommunicationCenter::init() {
+    Serial.println("\n=== WiFiConnection ===\n");
+    pWiFiConnection->setup_wifi();
+
+    if (false) {  // TODO cancellare finiti i debug
+        Serial.println("Test risoluzione DNS...");
+        IPAddress addr;
+        if (WiFi.hostByName("www.google.com", addr)) {
+            Serial.print("DNS OK per google → IP: ");
+            Serial.println(addr);
+        } else {
+            Serial.println("DNS FALLITO anche per google.com");
+        }
+    }
+
+    pMQTTpublisher->connect();
+    pMQTTsubscriber->connect();
+    pMQTTsubscriber->begin();
+
+    pMQTTpublisher->loop();
+    pMQTTsubscriber->loop();
+
+    // MQTT Publisher
+    Serial.println("Connessione MQTT publisher e subscriber ...");
+    if (pMQTTpublisher->connected() && pMQTTsubscriber->connected()) {
+        mqttState = MQTTState::CONNECTED;
+        Serial.println("Publisher e subscriber connessi");
+    } else {
+        mqttState = MQTTState::KO;
+        Serial.println("Errore nella connessione");
+    }
+
+    Serial.println("Communication Center inizializzato");
 }
 
 void CommunicationCenter::notifyNewState() {
-//     this->hangarState = pController->getControllerState();
-//     String hangarStateStr;
-//     if (hangarState == ControllerState::ALARM) {
-//         hangarStateStr = "2";
-//     } else if (hangarState == ControllerState::PRE_ALARM) {
-//         hangarStateStr = "1";
-//     } else {  // NORMAL
-//         hangarStateStr = "0";
-//     }
+    char* message;
+    this->waterState = pController->getWaterState();
+    if (waterState == WaterState::Low) {
+        message = "Low";
+        Serial.println("TUTTO OK");  // TODO espandere e migliorare
+    } else if (waterState == WaterState::Medium) {
+        message = "Mid";
+        Serial.println("TUTTO OK");  // TODO espandere e migliorare
+    } else if (waterState == WaterState::High) {
+        message = "High";
+        Serial.println("TUTTO OK");  // TODO espandere e migliorare
+    }
 
-//     droneState = pController->getDroneState();
-//     String droneStateStr = "-1";
-//     if (droneState == DroneState::REST) {
-//         droneStateStr = "0";
-//     } else if (droneState == DroneState::OPERATING) {
-//         droneStateStr = "1";
-//     } else {
-//         droneStateStr = "2";
-//     }
-//     droneAbove = pController->isDroneAbove();
-//     String droneAboveStr = "-1";
-//     if (droneAbove) {
-//         droneAboveStr = "1";
-//     } else {
-//         droneAboveStr = "0";
-//     }
+    if (pMQTTpublisher->connected()) {
+        // const char* message = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
+        Serial.print("Publish su " FREQ_TOPIC " → ");
+        Serial.println(message);
 
-//     droneDistance = pController->getDistance();  // solitamente tra 0 e 0.2
-//     // int droneDistance = 10;
-//     currentTemp = pController->getTemperature();
-
-//   // stato del hangar, stato drone, distanza drone, temperatura, drone above
-//   MsgService.sendMsg(String("STATE,") + 
-//                       hangarStateStr + "," + 
-//                       droneStateStr + "," + 
-//                       String(droneDistance).substring(0,5) + "," +  
-//                       String(currentTemp).substring(0,5) + "," +
-//                       String(droneAboveStr));  
+        pMQTTpublisher->publish(FREQ_TOPIC, message);  // usa il metodo semplice
+        // Oppure publisher->publishJSON(...) se preferisci il tuo formato JSON
+    } else {
+        Serial.println("Publisher non connesso → skip publish");
+    }
 }
 
-void CommunicationCenter::sync() {
-    // if (MsgService.isMsgAvailable()) {
-    //     Msg* msg = MsgService.receiveMsg();
-    //     if (msg != NULL) {
-    //         String msgContent = msg->getContent();
-    //         Logger.log("Received msg: " + msgContent);
-    //         if (msgContent == "to") {  // Take off
-    //             openDoorNotification = true;
-    //             takeOffNotification = true;
-    //         } else if (msgContent == "la") {  // Landing
-    //             openDoorNotification = true;
-    //             landingNotification = true;
-    //         } else if (msgContent == "ao") {  // Alarm on
-    //             pController->raiseAlarm();
-    //         } else if (msgContent == "af") {  // Alarm off
-    //             pController->resetAlarm();
-    //         }
-    //         delete msg;
-    //     }
-    // }
-    // pController->getResetButton()->sync();
-    // // Logger.log("Reset Alarm Pressed" + String(pController->getResetButton()->isPressed()));
-    // if (pController->getResetButton()->isPressed()) {
-    //     pController->resetAlarm();
-    // }
-}
+WiFiConnection* CommunicationCenter::getWiFiConnection() {
+    return this->pWiFiConnection;
+};
+MQTTsubscriber* CommunicationCenter::getMQTTsubscriber() {
+    return this->pMQTTsubscriber;
+};
+MQTTpublisher* CommunicationCenter::getMQTTpublisher() {
+    return this->pMQTTpublisher;
+};
 
-//* OPEN DOOR
-bool CommunicationCenter::checkAndResetOpenDoorRequest() {
-    // bool request = this->openDoorNotification;
-    // openDoorNotification = false;
-    // return request;
+MQTTState CommunicationCenter::getMQTTState() {
+    return this->mqttState;
 }
-
