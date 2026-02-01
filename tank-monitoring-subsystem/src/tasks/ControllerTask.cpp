@@ -1,15 +1,15 @@
-#include "MonitorTask.h"
+#include "ControllerTask.h"
 #include <Arduino.h>
 #include "config.h"
 // #include "kernel/Logger.h"
 
-MonitorTask::MonitorTask(Monitor* pMonitor) : pMonitor(pMonitor) {
-    // pMonitor->setDoorState(DoorState::CLOSED);
+ControllerTask::ControllerTask(Controller* pController) : pController(pController) {
+    // pController->setDoorState(DoorState::CLOSED);
 }
 
-void MonitorTask::tick() {
-    this->waterState = pMonitor->getWaterState();
-    this->mqttState = pMonitor->getMQTTState();
+void ControllerTask::tick() {
+    this->waterState = pController->getWaterState();
+    this->mqttState = pController->getMQTTState();
 
     if (mqttState == MQTTState::KO) {
         Serial.println("Problemi con l'MQTT"); // TODO espandere e migliorare
@@ -22,6 +22,6 @@ void MonitorTask::tick() {
     } 
 }
 
-// long MonitorTask::elapsedTimeInState() {
+// long ControllerTask::elapsedTimeInState() {
 //     return millis() - stateTimestamp;
 // }

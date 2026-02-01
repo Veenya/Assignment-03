@@ -1,25 +1,25 @@
 // TODO controlla lo stato e di conseguenza fa cose: controlla i led,...
-// Monitors the rainwater level in the tank
+// Controllers the rainwater level in the tank
 // Based on that it turns on the LEDs
 
-#ifndef __MONITOR__
-#define __MONITOR__
+#ifndef __CONTROLLER__
+#define __CONTROLLER__
 
 #include "HWPlatform.h"
 #include "States.h"
 #include "config.h"
 
-class Monitor {
+class Controller {
 public:
-    Monitor(HWPlatform* hw);
+    Controller(HWPlatform* hw);
 
     void init();
     void sync();
 
-    /* --- Monitor State ---*/
+    /* --- Controller State ---*/
     void checkNetwork();
     void checkData();
-    void setMonitorState();
+    void setControllerState();
 
     /* --- Water State ---*/
     void setWaterState(WaterState state);

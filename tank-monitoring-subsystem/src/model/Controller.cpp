@@ -1,14 +1,14 @@
 #include "Arduino.h"
 
-#include "Monitor.h"
+#include "Controller.h"
 #include "config.h"
 #include "kernel/Logger.h"
 
 bool SVILUPPO = true;
 
-Monitor::Monitor(HWPlatform* hw) : pHW(hw), waterState(WaterState::Low) {}
+Controller::Controller(HWPlatform* hw) : pHW(hw), waterState(WaterState::Low) {}
 
-void Monitor::init() {
+void Controller::init() {
     L1isOn = false;
     L2isOn = false;
     alarmRaised = false;
@@ -29,13 +29,13 @@ void Monitor::init() {
 
 /* --------- Stato acqua --------- */
 
-void Monitor::setWaterState(WaterState state) {
+void Controller::setWaterState(WaterState state) {
     this->waterState = state;
 }
 
 /* --------- Letture sensori --------- */
 
-float Monitor::getDistance() {
+float Controller::getDistance() {
     auto sonar = pHW->getDDD();
     if (!sonar) {
         return SONAR_NO_OBJ_DETECTED;
@@ -46,31 +46,31 @@ float Monitor::getDistance() {
 
 /* --------- Stato acqua --------- */
 
-WaterState Monitor::getWaterState() {
+WaterState Controller::getWaterState() {
     return this->waterState;
 }
 
-MQTTState Monitor::getMQTTState() {
+MQTTState Controller::getMQTTState() {
     return this->mqttState;
 }
 
-void Monitor::setL1On() {
+void Controller::setL1On() {
     this->L1isOn = true;
 }
-void Monitor::setL2On() {
+void Controller::setL2On() {
     this->L2isOn = true;
 }
 
-void Monitor::setL1Off() {
+void Controller::setL1Off() {
     this->L1isOn = false;
 }
 
-void Monitor::setL2Off() {
+void Controller::setL2Off() {
     this->L2isOn = false;
 }
 
 
-void Monitor::manageLeds() {
+void Controller::manageLeds() {
     // Led1 Verde
     if (pHW->getMQTTState() == MQTTState::CONNECTED) {
         pHW->getL1()->switchOn();
@@ -82,7 +82,7 @@ void Monitor::manageLeds() {
 
 }
 
-// void Monitor::manageDoor() {
+// void Controller::manageDoor() {
 //     switch (doorState) {
 //         case DoorState::OPEN:
 //             Logger.log(F("[DO] Door is Open"));
@@ -105,13 +105,13 @@ void Monitor::manageLeds() {
 
 
 
-// void Monitor::raiseAlarm() {
+// void Controller::raiseAlarm() {
 //     this->alarmRaised = true;
 // }
-// void Monitor::resetAlarm() {
+// void Controller::resetAlarm() {
 //     this->alarmRaised = false;
 // }
-// void Monitor::manageAlarm() {
+// void Controller::manageAlarm() {
 //     if (alarmRaised && droneState != DroneState::TAKING_OFF && droneState != DroneState::LANDING &&
 //         droneState != DroneState::WAITING) {
 //         hangarState = HangarState::ALARM;
@@ -123,7 +123,7 @@ void Monitor::manageLeds() {
 
 
 
-void Monitor::sync() {
+void Controller::sync() {
     // manageAlarm();
     manageLeds();
 }

@@ -6,13 +6,13 @@
 #include "kernel/Task.h"
 #include "model/CommunicationCenter.h"
 #include "model/HWPlatform.h"
-#include "model/Monitor.h"
+#include "model/Controller.h"
 #include "model/States.h"
 // #include "model/UserPanel.h"
 
 class SonarTask : public Task {
 public:
-    SonarTask(Monitor* pMonitor);
+    SonarTask(Controller* pController);
     void tick();
 
 private:
@@ -25,7 +25,7 @@ private:
     WaterState state;
 
     // UserPanel* pUserPanel;
-    Monitor* pMonitor;
+    Controller* pController;
 };
 
 #endif

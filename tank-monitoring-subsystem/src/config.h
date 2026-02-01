@@ -23,7 +23,7 @@
 
 #define COMMUNICATION_PERIOD 500       // tempo tick communication center
 #define SONAR_TASK           1000      // tempo misurazione livello acqua
-#define MONITOR_TASK         1000      // tempo tempo gestione canali
+#define CONTROLLER_TASK         1000      // tempo tempo gestione canali
 #define SONAR_NO_OBJ_DETECTED -1
 
 

@@ -2,8 +2,8 @@
 #include "config.h"
 #include "kernel/Scheduler.h"
 #include "model/HWPlatform.h"
-#include "model/Monitor.h"
-#include "tasks/MonitorTask.h"
+#include "model/Controller.h"
+#include "tasks/ControllerTask.h"
 #include "tasks/SonarTask.h"
 
 // #include "kernel/Logger.h"
@@ -13,7 +13,7 @@
 
 HWPlatform* pHWPlatform;
 Scheduler scheduler;
-Monitor* pMonitor;
+Controller* pController;
 
 // UserPanel* pUserPanel;
 // CommunicationCenter* pCommunicationCenter;
@@ -23,7 +23,7 @@ const unsigned long PUBLISH_INTERVAL = 5000;  // ogni 5 secondi
 
 void setup() {
     // MsgService.init();
-    // Logger.log(":::::: Tank Monitoring Subsystem ::::::");
+    // Logger.log(":::::: Tank Controllering Subsystem ::::::");
     Serial.begin(ESP_BAUD);
     delay(200);
     Serial.println("\n=== TEST WiFi + MQTT MINIMALE ===\n");
@@ -36,8 +36,8 @@ void setup() {
     // pUserPanel = new UserPanel(pHWPlatform);
     // pUserPanel->init();
 
-    pMonitor = new Monitor(pHWPlatform);
-    pMonitor->init();
+    pController = new Controller(pHWPlatform);
+    pController->init();
 
     // pCommunicationCenter = new CommunicationCenter(pHangar);
     // pCommunicationCenter->init();
@@ -45,15 +45,15 @@ void setup() {
     // Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pHangar);
     // pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    Task* pSonarTask = new SonarTask(pMonitor);
+    Task* pSonarTask = new SonarTask(pController);
     pSonarTask->init(SONAR_TASK);
 
-    Task* pMonitorTask = new MonitorTask(pMonitor);
-    pMonitorTask->init(MONITOR_TASK);
+    Task* pControllerTask = new ControllerTask(pController);
+    pControllerTask->init(CONTROLLER_TASK);
 
 
     // scheduler.addTask(pSonarTask);
-    // scheduler.addTask(pMonitorTask);
+    // scheduler.addTask(pControllerTask);
     
 
     Serial.println("\n=== SETUP OK ===\n");

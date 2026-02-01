@@ -5,7 +5,7 @@
 
 bool DEBUG = true;
 
-SonarTask::SonarTask(Monitor* pMonitor) : pMonitor(pMonitor) {
+SonarTask::SonarTask(Controller* pController) : pController(pController) {
     setState(WaterState::Low);
 }
 
@@ -22,14 +22,14 @@ SonarTask::SonarTask(Monitor* pMonitor) : pMonitor(pMonitor) {
 */
 
 void SonarTask::tick() {
-    pMonitor->sync();
+    pController->sync();
 
-    float level = pMonitor->getDistance();
+    float level = pController->getDistance();
 
     if (!DEBUG) {
         switch (state) {
             case WaterState::Low: {
-                pMonitor->setWaterState(WaterState::Low);
+                pController->setWaterState(WaterState::Low);
 
                 if (level > L1) {
                     setState(WaterState::Medium);
@@ -54,7 +54,7 @@ void SonarTask::tick() {
 
             
         }  // end switch
-        pMonitor->setWaterState(this->state);
+        pController->setWaterState(this->state);
     }
 }
 

@@ -1,15 +1,15 @@
-#ifndef __MONITOR_TASK__
-#define __MONITOR_TASK__
+#ifndef __CONTROLLER_TASK__
+#define __CONTROLLER_TASK__
 
 #include "kernel/Task.h"
 // #include "model/CommunicationCenter.h"
-#include "model/Monitor.h"
+#include "model/Controller.h"
 #include "model/States.h"
 
 
-class MonitorTask : public Task {
+class ControllerTask : public Task {
 public:
-    MonitorTask(Monitor* pMonitor);
+    ControllerTask(Controller* pController);
     void tick();
 
 private:
@@ -18,10 +18,10 @@ private:
 
     bool droneInRange;
 
-    // MonitorState monitorState;
+    // ControllerState cotrollerState;
     long stateTimestamp;
 
-    Monitor* pMonitor;
+    Controller* pController;
     WaterState waterState;
     MQTTState mqttState;
 };
