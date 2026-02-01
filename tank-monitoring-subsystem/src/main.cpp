@@ -7,34 +7,22 @@
 #include "tasks/SonarTask.h"
 #include "model/CommunicationCenter.h"
 #include "tasks/CommunicationTask.h"
-
 // #include "kernel/Logger.h"
-// #include "kernel/MsgService.h"
 
 HWPlatform* pHWPlatform;
 Scheduler scheduler;
 Controller* pController;
 CommunicationCenter* pCommunicationCenter;
 
-// UserPanel* pUserPanel;
-
-unsigned long lastPublish = 0;
-const unsigned long PUBLISH_INTERVAL = 5000;  // ogni 5 secondi
-
 void setup() {
-    // MsgService.init();
     // Logger.log(":::::: Tank Controllering Subsystem ::::::");
     Serial.begin(ESP_BAUD);
     delay(200);
-    Serial.println("\n=== TEST WiFi + MQTT MINIMALE ===\n");
+    Serial.println("\n=== ESP32 Setup ===\n");
     
     scheduler.init(SCHEDULER_PERIOD);
     pHWPlatform = new HWPlatform();
     pHWPlatform->init();
-
-
-    // pUserPanel = new UserPanel(pHWPlatform);
-    // pUserPanel->init();
 
     pController = new Controller(pHWPlatform);
     pController->init();
@@ -51,9 +39,8 @@ void setup() {
     Task* pControllerTask = new ControllerTask(pController, pCommunicationCenter);
     pControllerTask->init(CONTROLLER_TASK);
 
-
-    // scheduler.addTask(pSonarTask);
-    // scheduler.addTask(pControllerTask);
+    scheduler.addTask(pSonarTask);
+    scheduler.addTask(pControllerTask);
     
 
     Serial.println("\n=== SETUP OK ===\n");
@@ -61,8 +48,4 @@ void setup() {
 
 void loop() {
     // scheduler.schedule();
-
-    
-
-    // delay(10);  // piccolo respiro (non bloccante)
 }
