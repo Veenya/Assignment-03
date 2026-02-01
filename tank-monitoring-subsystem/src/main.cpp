@@ -5,18 +5,18 @@
 #include "model/Controller.h"
 #include "tasks/ControllerTask.h"
 #include "tasks/SonarTask.h"
+#include "model/CommunicationCenter.h"
+#include "tasks/CommunicationTask.h"
 
 // #include "kernel/Logger.h"
 // #include "kernel/MsgService.h"
-// #include "model/CommunicationCenter.h"
-// #include "tasks/CommunicationTask.h"
 
 HWPlatform* pHWPlatform;
 Scheduler scheduler;
 Controller* pController;
+CommunicationCenter* pCommunicationCenter;
 
 // UserPanel* pUserPanel;
-// CommunicationCenter* pCommunicationCenter;
 
 unsigned long lastPublish = 0;
 const unsigned long PUBLISH_INTERVAL = 5000;  // ogni 5 secondi
@@ -39,11 +39,11 @@ void setup() {
     pController = new Controller(pHWPlatform);
     pController->init();
 
-    // pCommunicationCenter = new CommunicationCenter(pHangar);
-    // pCommunicationCenter->init();
+    pCommunicationCenter = new CommunicationCenter(pController);
+    pCommunicationCenter->init();
 
-    // Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pHangar);
-    // pCommunicationTask->init(COMMUNICATION_PERIOD);
+    Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
+    pCommunicationTask->init(COMMUNICATION_PERIOD);
 
     Task* pSonarTask = new SonarTask(pController);
     pSonarTask->init(SONAR_TASK);
