@@ -8,6 +8,11 @@ import datetime
 import requests
 
 #TODO: disable slider and valve button if we are in auto 
+# if in manual make the valve value controlled from dshboard (here)
+# La dashboard deve leggere la modalità (dal suo mode-store o dal backend) e impostare disabled=True su slider/bottone quando isManual=False.
+
+# if auto, disable set valve value, take info from backend
+# Il sistema reale (o simulatore) deve leggere /api/postdata e comportarsi di conseguenza (in auto ignora i comandi manuali, in manuale usa valveValue comandato, ecc.).
 
 data_queue = deque(maxlen=60)
 
@@ -32,11 +37,12 @@ app.layout = html.Div([
             dcc.Slider(
                 id="valveValue",
                 min=0, max=100, value=0,
-                marks={i: f"{i}%" for i in range(0, 101, 10)}
+                marks={i: f"{i}%" for i in range(0, 101, 10)},
+                disabled=False,
             )
         ], style={"width": "33%", "display": "inline-block"}),
 
-        html.Button("Set Valve Value", id="send-valveValue", n_clicks=0, style={"marginRight": "1%"}),
+        html.Button("Set Valve Value", id="send-valveValue", n_clicks=0, style={"marginRight": "1%"}, disabled=False),
         html.Button("Switch to AUTO", id="send-autoMode", n_clicks=0),
     ], style={"display": "flex", "justifyContent": "center", "alignItems": "center"}),
 
@@ -68,6 +74,29 @@ def get_post_data(n):
     data["timestamp"] = datetime.datetime.now().strftime("%H:%M:%S")
     data_queue.append(data)
     return ""
+
+@app.callback(
+    Output("valveValue", "disabled"),
+    Output("send-valveValue", "disabled"),
+    Output("valveValue", "value"),
+    Input("mode-store", "data"),
+    Input("interval-component", "n_intervals"),
+)
+def update_manual_ui(mode_store, n):
+    is_manual = bool(mode_store.get("isManual", True))
+
+    # In MANUAL: controlli attivi e NON tocchiamo il valore dello slider (lo decide l'utente)
+    if is_manual:
+        return False, False, no_update
+
+    # In AUTO: controlli disabilitati e slider "segue" il valore reale che arriva dai dati
+    if data_queue:
+        backend_valve = int(data_queue[-1].get("valveValue", 0))
+        return True, True, backend_valve
+
+    # Se non ci sono ancora dati, disabilita e lascia value com'è
+    return True, True, no_update
+
 
 @app.callback(
     Output("mode-store", "data"),
