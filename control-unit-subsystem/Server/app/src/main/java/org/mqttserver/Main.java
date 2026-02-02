@@ -11,6 +11,8 @@ import org.mqttserver.services.mqtt.BrokerImpl;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+// TODO: implementare parte di arduino, al momento rompe tutto se la metto, ora e' commentata via
+
 public class Main {
 
     public static void main(String[] args) throws Exception {
