@@ -11,6 +11,7 @@ ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCo
 void ControllerTask::tick() {
     this->waterState = pController->getWaterState();
     manageLeds();
+    manageWaterLevel();
 }
 
 void ControllerTask::manageLeds() {
@@ -23,6 +24,46 @@ void ControllerTask::manageLeds() {
     }
 }
 
-// long ControllerTask::elapsedTimeInState() {
-//     return millis() - stateTimestamp;
-// }
+void ControllerTask::manageWaterLevel() {
+    float level = pController->getDistance();
+    switch (pController->getWaterState()) {
+        case WaterState::Low: {
+            pController->setWaterState(WaterState::Low);
+
+            if (level > L1) {
+                setWaterState(WaterState::Medium);
+            }
+            break;
+        }
+
+        case WaterState::Medium: {
+            if (level < L1) {
+                setWaterState(WaterState::Low);
+            } else if (level > L1 && elapsedTimeInState() > TIME1) {
+                setWaterState(WaterState::High);
+            }
+            break;
+        }
+
+        case WaterState::High: {
+            // ? Può tornare low?
+            if (level < L1) {
+                setWaterState(WaterState::Low);
+            }
+            break;
+        }
+    }  // end switch
+    pController->setWaterState(this->waterState);
+
+}
+
+void ControllerTask::setWaterState(WaterState waterState) {
+    this->waterState = waterState;
+    stateTimestamp = millis();
+    justEntered = true;
+}
+
+
+long ControllerTask::elapsedTimeInState() {
+    return millis() - stateTimestamp;
+}

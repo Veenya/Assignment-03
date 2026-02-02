@@ -11,6 +11,8 @@ public:
     void init();
     void sync();
     void setWaterState(WaterState state);
+    void setWaterDistance(float distance);
+    float getWaterDistance();
     float getDistance();
     void setL1On();
     void setL2On();
@@ -27,11 +29,7 @@ public:
     bool L1isOn;
     bool L2isOn;
     bool doorOpen;
-    float lastDistance;
-    float currentTemp;
-    float lastTemperature;
-    bool alarmRaised;
-    void manageLeds();
+    float waterDistance;
 
 };
 

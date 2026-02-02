@@ -16,7 +16,6 @@ private:
 
     float temperature;
     int echoPin, trigPin;
-    long timeOut;
 };
 
 #endif

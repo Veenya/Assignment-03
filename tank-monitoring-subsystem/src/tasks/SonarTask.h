@@ -12,6 +12,7 @@ public:
     SonarTask(Controller* pController);
     void tick();
     void setWaterState(WaterState waterState);
+    
 
 private:
     long elapsedTimeInState();

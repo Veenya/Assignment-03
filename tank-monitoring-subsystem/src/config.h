@@ -6,24 +6,21 @@
 //! Impostare l'ip del pc
 #define DEFAULT_MQTT_SERVER  "192.168.1.98"
 
-
-
-
 #define ESP_BAUD             115200
 
 #define SCHEDULER_PERIOD     100 // interrupt fa ripartire lo scheduler ogni n millisecondi
 #define STATE_UPDATE_PERIOD  500 // periodo di invio stato da CommunicationCenter in ms
 
 
-#define L1_PIN               9 // green 
-#define L2_PIN               2 // red
+#define L1_PIN               18 // green 
+#define L2_PIN               19 // red
 
-#define SONAR_TRIG_PIN      8
-#define SONAR_ECHO_PIN      7
+#define SONAR_ECHO_PIN       2
+#define SONAR_TRIG_PIN       4
 
 #define COMMUNICATION_PERIOD 500       // tempo tick communication center
 #define SONAR_TASK           1000      // tempo misurazione livello acqua
-#define CONTROLLER_TASK         1000      // tempo tempo gestione canali
+#define CONTROLLER_TASK      1000      // tempo tempo gestione canali
 #define SONAR_NO_OBJ_DETECTED -1
 
 
@@ -39,9 +36,9 @@
 #define WIFI_SSID          "star"
 #define WIFI_PASSWORD      "cicciopasticcio"
 
-#define MAX_TIME_US    10 // TODO capire a cosa serviva e se serve ancora
+#define MAX_TIME_US                     30000L // timeout Sonar
 
-#define MQTT_PORT      1883
+#define MQTT_PORT                       1883
 
 #define FREQUENCY_FIELD      "freq"
 #define WATER_LEVEL_FIELD    "WL"

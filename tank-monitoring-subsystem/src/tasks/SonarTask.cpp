@@ -12,37 +12,10 @@ SonarTask::SonarTask(Controller* pController) : pController(pController) {
 void SonarTask::tick() {
     pController->sync();
     float level = pController->getDistance();
+    Serial.print("DISTANZA ");
+    Serial.println(level);
 
-    if (!DEBUG) {
-        switch (state) {
-            case WaterState::Low: {
-                pController->setWaterState(WaterState::Low);
-
-                if (level > L1) {
-                    setWaterState(WaterState::Medium);
-                }
-                break;
-            }
-
-            case WaterState::Medium: {
-                if (level < L1) {
-                    setWaterState(WaterState::Low);
-                } else if (level > L1 && elapsedTimeInState() > TIME1) {
-                    setWaterState(WaterState::High);
-                }
-                break;
-            }
-
-            case WaterState::High: {
-                // ? Può tornare low?
-                if (level < L1) {
-                    setWaterState(WaterState::Low);
-                }
-                break;
-            }
-        }  // end switch
-        pController->setWaterState(this->state);
-    }
+    pController->setWaterDistance(level);
 }
 
 void SonarTask::setWaterState(WaterState waterState) {

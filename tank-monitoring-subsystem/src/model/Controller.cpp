@@ -11,7 +11,6 @@ Controller::Controller(HWPlatform* hw) : pHW(hw), waterState(WaterState::Low) {}
 void Controller::init() {
     L1isOn = false;
     L2isOn = false;
-    alarmRaised = false;
 
     if (SVILUPPO) {
         Serial.println("Led TEST");
@@ -38,6 +37,7 @@ void Controller::setWaterState(WaterState state) {
 float Controller::getDistance() {
     auto sonar = pHW->getDDD();
     if (!sonar) {
+        Serial.println("Chiamata Controller::getDistance NO SONAR");
         return SONAR_NO_OBJ_DETECTED;
     }
     return sonar->getDistance();
@@ -72,52 +72,15 @@ void Controller::setL1Off() {
 void Controller::setL2Off() {
     this->L2isOn = false;
 }
+void Controller::setWaterDistance(float distance) {
+    this->waterDistance = distance;
+}
 
-
-
-
-// void Controller::manageDoor() {
-//     switch (doorState) {
-//         case DoorState::OPEN:
-//             Logger.log(F("[DO] Door is Open"));
-//             break;
-//         case DoorState::OPENING:
-//             this->openDoor();
-//             Logger.log(F("[DO] opening door"));
-//             break;
-//         case DoorState::CLOSED:
-//             Logger.log(F("[DO] Door is Closed"));
-//             break;
-//         case DoorState::CLOSING:
-//             this->closeDoor();
-//             Logger.log(F("[DO] closing door"));
-//             break;
-//         default:
-//             break;
-//     }
-// }
-
-
-
-// void Controller::raiseAlarm() {
-//     this->alarmRaised = true;
-// }
-// void Controller::resetAlarm() {
-//     this->alarmRaised = false;
-// }
-// void Controller::manageAlarm() {
-//     if (alarmRaised && droneState != DroneState::TAKING_OFF && droneState != DroneState::LANDING &&
-//         droneState != DroneState::WAITING) {
-//         hangarState = HangarState::ALARM;
-//     } else {
-//         hangarState = HangarState::NORMAL;
-//     }
-// }
-
-
-
+float Controller::getWaterDistance() {
+    return this->waterDistance;
+}
 
 void Controller::sync() {
     // manageAlarm();
-    manageLeds();
+    // manageLeds();
 }

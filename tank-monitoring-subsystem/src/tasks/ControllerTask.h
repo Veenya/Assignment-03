@@ -12,14 +12,17 @@ public:
     void tick();
 
 private:
-    long stateTimestamp;
     void manageLeds();
+    void manageWaterLevel();
     Controller* pController;
     HWPlatform* pHW;
     WaterState waterState;
     MQTTState mqttState;
     CommunicationCenter* pCommunicationCenter;
-    // long elapsedTimeInState();
+    long elapsedTimeInState();
+    long stateTimestamp;
+    bool justEntered;
+    void setWaterState(WaterState waterState);
 };
 
 #endif

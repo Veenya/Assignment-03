@@ -47,17 +47,14 @@ void CommunicationCenter::init() {
 }
 
 void CommunicationCenter::notifyNewState() {
-    char* message;
+    String message;
     this->waterState = pController->getWaterState();
     if (waterState == WaterState::Low) {
         message = "Low";
-        Serial.println("TUTTO OK");  // TODO espandere e migliorare
     } else if (waterState == WaterState::Medium) {
         message = "Mid";
-        Serial.println("TUTTO OK");  // TODO espandere e migliorare
     } else if (waterState == WaterState::High) {
         message = "High";
-        Serial.println("TUTTO OK");  // TODO espandere e migliorare
     }
 
     if (pMQTTpublisher->connected()) {
@@ -65,7 +62,8 @@ void CommunicationCenter::notifyNewState() {
         Serial.print("Publish su " FREQ_TOPIC " → ");
         Serial.println(message);
 
-        pMQTTpublisher->publish(FREQ_TOPIC, message);  // metodo semplice
+        pMQTTpublisher->publish(FREQ_TOPIC, message.c_str());  // metodo semplice
+        //c_str() restituisce un puntatore a const char*
         // publisher->publishJSON(...) altrimenti JSON
     } else {
         Serial.println("Publisher non connesso → skip publish");
