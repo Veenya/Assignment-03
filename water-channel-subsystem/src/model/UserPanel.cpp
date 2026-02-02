@@ -29,40 +29,30 @@ void UserPanel::turnOffDisplay() {
     pLcd->noDisplay();
 }
 
-void UserPanel::displayDroneInside() {
-    pLcd->clear();
-    pLcd->setCursor(0, 0);
-    pLcd->print("DRONE INSIDE");
+void UserPanel::displayOpeningLevel(float val) {
+    pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->setCursor(0, 1);
+    pLcd->print("VALVE:");
+    pLcd->print(val, 1); //1 decimale
+    pLcd->print("%");
 }
 
-void UserPanel::displayTakeOff() {
-    pLcd->clear();
+void UserPanel::displayAutomatic() {
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("TAKE OFF");
+    pLcd->print("AUTOMATIC"); 
 }
 
-void UserPanel::displayWaitingDoor() {
-    pLcd->clear();
+void UserPanel::displayManual() {
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("WAITING DOOR");
+    pLcd->print("MANUAL"); 
 }
 
-void UserPanel::displayDroneOut() {
-    pLcd->clear();
+void UserPanel::displayUnconnected() {
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("DRONE OUT");
-}
-
-void UserPanel::displayLanding() {
-    pLcd->clear();
-    pLcd->setCursor(0, 0);
-    pLcd->print("LANDING");
-}
-
-void UserPanel::displayAlarm() {
-    pLcd->clear();
-    pLcd->setCursor(0, 0);
-    pLcd->print("ALARM");
+    pLcd->print("UNCONNECTED"); 
 }
 
 void UserPanel::prepareToSleep() {

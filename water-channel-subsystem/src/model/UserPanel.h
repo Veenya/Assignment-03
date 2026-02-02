@@ -4,9 +4,9 @@
 #include "HWPlatform.h"
 
 /*
- * Classe per la gestione dell'interfaccia utente. Gestisce:
- * - Reset button
- * - Schermo LCD
+ * The WCS subsystem is equipped also with an LCD display reporting:
+    the current valve opening level of the water channel.
+    the current mode (AUTOMATIC or MANUAL), or UNCONNECTED (see later).
  */
 class UserPanel {
 public:
@@ -18,12 +18,13 @@ public:
     // metodi LCD
     void turnOnDisplay();
     void turnOffDisplay();
-    void displayDroneInside();
-    void displayTakeOff();
-    void displayWaitingDoor();
-    void displayDroneOut();
-    void displayLanding();
-    void displayAlarm();
+
+    void displayOpeningLevel(float val);
+    //void displaySystemMode();
+    void displayAutomatic();
+    void displayManual();
+    void displayUnconnected();
+    
     void prepareToSleep();
     void resumeFromSleeping();
 
