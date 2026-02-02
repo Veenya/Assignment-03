@@ -5,6 +5,8 @@ import com.google.gson.Gson;
 //     Java objects -> JSON strings
 //     JSON strings -> Java objects
 public class JSONUtils {
+    private static final Gson gson = new Gson();
+    
     public static String objectToJson(Object object) {
         return gson.toJson(object);
     }
