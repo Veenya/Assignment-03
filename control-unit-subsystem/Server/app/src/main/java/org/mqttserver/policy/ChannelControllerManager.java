@@ -3,7 +3,7 @@ package org.mqttserver.policy;
 import org.mqttserver.presentation.Status;
 
 public interface ChannelControllerManager {
-    void sendStatusMessageToArduino(Status status);
-    void sendValveMessageToArduino(int valveValue);
+    void sendMessageToArduino(Status status);
+    void sendMessageToArduino(int valveValue);
     String receiveDataFromArduino() throws InterruptedException;
 }
