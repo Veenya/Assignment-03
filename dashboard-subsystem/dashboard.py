@@ -7,22 +7,25 @@ from collections import deque
 import datetime
 import requests
 
-#TODO: disable slider and valve button if we are in auto 
-# if in manual make the valve value controlled from dshboard (here)
-# La dashboard deve leggere la modalità (dal suo mode-store o dal backend) e impostare disabled=True su slider/bottone quando isManual=False.
-
-# if auto, disable set valve value, take info from backend
-# Il sistema reale (o simulatore) deve leggere /api/postdata e comportarsi di conseguenza (in auto ignora i comandi manuali, in manuale usa valveValue comandato, ecc.).
-
-data_queue = deque(maxlen=60)
+# -------- CONFIG --------
+CUS_BASE = "http://127.0.0.1:8050"   # <-- metti la porta corretta del tuo Java
+POLL_MS = 2000                       # <-- aumenta per evitare overload
+REQ_TIMEOUT = 0.8                    # <-- più basso del POLL_MS
+MAX_POINTS = 60
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, title="Dashboard")
 
+# storico WL/valve tenuto in memoria python
+data_queue = deque(maxlen=MAX_POINTS)
+
 app.layout = html.Div([
-    dcc.Interval(id="interval-component", interval=1000, n_intervals=0),
+    dcc.Interval(id="interval-component", interval=POLL_MS, n_intervals=0),
 
     html.H1("River Monitoring Dashboard", style={"textAlign": "center", "fontSize": "48px"}),
+
+    # mostra eventuali errori di polling (così non sono "invisibili")
+    html.Div(id="conn-status", style={"textAlign": "center", "color": "red", "marginBottom": "10px"}),
 
     html.Div([
         html.Div([dcc.Graph(id="water-level-graph")], style={"width": "50%", "display": "inline-block"}),
@@ -46,62 +49,59 @@ app.layout = html.Div([
         html.Button("Switch to AUTO", id="send-autoMode", n_clicks=0),
     ], style={"display": "flex", "justifyContent": "center", "alignItems": "center"}),
 
-    # output separati per evitare conflitto
-    html.Div(id="dummy-output-mode", style={"display": "none"}),
-    html.Div(id="dummy-output-valve", style={"display": "none"}),
-    html.Div(id="dummy-output1", style={"display": "none"}),
-
+    # store single “latest snapshot” from backend
+    dcc.Store(id="latest-store", data=None),
     dcc.Store(id="mode-store", data={"isManual": True}),
 ])
 
+# ---------- 1) SINGLE POLL: only this callback does HTTP GET ----------
 @app.callback(
-    Output("dummy-output1", "children"),
+    Output("latest-store", "data"),
+    Output("conn-status", "children"),
     Input("interval-component", "n_intervals")
 )
-def get_post_data(n):
+def poll_backend(n):
     try:
-        r = requests.get("http://localhost:8050/api/systemdata", timeout=2)
+        r = requests.get(f"{CUS_BASE}/api/systemdata", timeout=REQ_TIMEOUT)
         r.raise_for_status()
-        j = r.json()
-        if not j:
-            return ""  # ancora niente dati
-        data = j[0]
+        data = r.json()  # must be an object: {status,isManual,valveValue,wl}
+        if not data:
+            return None, "No data yet"
+        return data, ""
     except Exception as e:
-        return f"GET error: {e}"
+        return None, f"GET error: {e}"
 
-    data["wl"] = float(data["wl"])
-    data["valveValue"] = int(data["valveValue"])
-    data["timestamp"] = datetime.datetime.now().strftime("%H:%M:%S")
-    data_queue.append(data)
+# ---------- 2) UPDATE HISTORY (python deque) when new data arrives ----------
+@app.callback(
+    Output("dummy-history", "children"),
+    Input("latest-store", "data"),
+    prevent_initial_call=True
+)
+def push_history(latest):
+    # dummy output created dynamically below to avoid clutter
+    if not latest:
+        return ""
+
+    try:
+        data_queue.append({
+            "wl": float(latest.get("wl", 0)),
+            "valveValue": int(latest.get("valveValue", 0)),
+            "status": str(latest.get("status", "?")),
+            "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
+        })
+    except Exception:
+        # ignore parse errors
+        pass
     return ""
 
-@app.callback(
-    Output("valveValue", "disabled"),
-    Output("send-valveValue", "disabled"),
-    Output("valveValue", "value"),
-    Input("mode-store", "data"),
-    Input("interval-component", "n_intervals"),
-)
-def update_manual_ui(mode_store, n):
-    is_manual = bool(mode_store.get("isManual", True))
+# create hidden dummy div for history callback
+app.layout.children.append(html.Div(id="dummy-history", style={"display": "none"}))
 
-    # In MANUAL: controlli attivi e NON tocchiamo il valore dello slider (lo decide l'utente)
-    if is_manual:
-        return False, False, no_update
-
-    # In AUTO: controlli disabilitati e slider "segue" il valore reale che arriva dai dati
-    if data_queue:
-        backend_valve = int(data_queue[-1].get("valveValue", 0))
-        return True, True, backend_valve
-
-    # Se non ci sono ancora dati, disabilita e lascia value com'è
-    return True, True, no_update
-
-
+# ---------- 3) MODE button: POST /api/mode ----------
 @app.callback(
     Output("mode-store", "data"),
-    Output("dummy-output-mode", "children"),
     Output("send-autoMode", "children"),
+    Output("conn-status", "children", allow_duplicate=True),
     Input("send-autoMode", "n_clicks"),
     State("mode-store", "data"),
     prevent_initial_call=True
@@ -111,29 +111,68 @@ def toggle_mode(n_clicks, store):
     new_is_manual = not is_manual
 
     try:
-        r = requests.post("http://localhost:8050/api/postdata",
-                          json={"isManual": new_is_manual}, timeout=2)
-        msg = f"isManual={new_is_manual} -> {r.status_code}"
-    except requests.RequestException as e:
-        return store, f"POST failed: {e}", no_update
+        r = requests.post(
+            f"{CUS_BASE}/api/mode",
+            json={"isManual": new_is_manual},
+            timeout=REQ_TIMEOUT
+        )
+        # 200 ok expected
+        if r.status_code >= 400:
+            return store, no_update, f"POST /api/mode failed: {r.status_code} {r.text}"
+    except Exception as e:
+        return store, no_update, f"POST /api/mode error: {e}"
 
     button_text = "Switch to AUTO" if new_is_manual else "Switch to MANUAL"
-    return {"isManual": new_is_manual}, msg, button_text
+    return {"isManual": new_is_manual}, button_text, ""
 
+# ---------- 4) VALVE button: POST /api/valve ----------
 @app.callback(
-    Output("dummy-output-valve", "children"),
+    Output("conn-status", "children", allow_duplicate=True),
     Input("send-valveValue", "n_clicks"),
     State("valveValue", "value"),
+    State("mode-store", "data"),
     prevent_initial_call=True
 )
-def send_valveValue(n_clicks, valveValue):
-    r = requests.post("http://localhost:8050/api/postdata",
-                      json={"valveValue": valveValue}, timeout=2)
-    return f"Valve={valveValue} -> {r.status_code}"
+def send_valve_value(n_clicks, valve_value, mode_store):
+    # avoid calling backend in AUTO
+    if not bool(mode_store.get("isManual", True)):
+        return "Valve can be set only in MANUAL mode"
 
+    try:
+        r = requests.post(
+            f"{CUS_BASE}/api/valve",
+            json={"valveValue": int(valve_value)},
+            timeout=REQ_TIMEOUT
+        )
+        if r.status_code >= 400:
+            return f"POST /api/valve failed: {r.status_code} {r.text}"
+        return ""
+    except Exception as e:
+        return f"POST /api/valve error: {e}"
+
+# ---------- 5) ENABLE/DISABLE controls based on mode-store + backend latest ----------
+@app.callback(
+    Output("valveValue", "disabled"),
+    Output("send-valveValue", "disabled"),
+    Output("valveValue", "value"),
+    Input("mode-store", "data"),
+    Input("latest-store", "data"),
+)
+def update_manual_ui(mode_store, latest):
+    is_manual = bool(mode_store.get("isManual", True))
+
+    if is_manual:
+        return False, False, no_update
+
+    # AUTO: disable and sync slider with backend (if available)
+    if latest:
+        return True, True, int(latest.get("valveValue", 0))
+    return True, True, no_update
+
+# ---------- 6) Graphs + status read from deque ----------
 @app.callback(Output("water-level-graph", "figure"),
-              Input("interval-component", "n_intervals"))
-def update_water(n):
+              Input("latest-store", "data"))
+def update_water(_latest):
     return go.Figure(
         data=[go.Scatter(
             x=[d["timestamp"] for d in data_queue],
@@ -144,8 +183,8 @@ def update_water(n):
     )
 
 @app.callback(Output("valve-level-graph", "figure"),
-              Input("interval-component", "n_intervals"))
-def update_valve(n):
+              Input("latest-store", "data"))
+def update_valve(_latest):
     return go.Figure(
         data=[go.Scatter(
             x=[d["timestamp"] for d in data_queue],
@@ -156,11 +195,12 @@ def update_valve(n):
     )
 
 @app.callback(Output("status-display", "children"),
-              Input("interval-component", "n_intervals"))
-def update_status(n):
-    if data_queue:
-        return f'Stato del sistema: {data_queue[-1].get("status","?")}'
+              Input("latest-store", "data"))
+def update_status(latest):
+    if latest:
+        return f'Stato del sistema: {latest.get("status", "?")}'
     return "In attesa di dati..."
 
 if __name__ == "__main__":
+    # debug=True can create 2 processes; keep it True for dev, but if issues persist set False
     app.run(debug=True, port=8057)

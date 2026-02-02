@@ -8,54 +8,77 @@ import org.mqttserver.services.http.DataService;
 import org.mqttserver.services.mqtt.Broker;
 import org.mqttserver.services.mqtt.BrokerImpl;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class Main {
-  public static void main(String[] args) throws Exception {
 
-    System.out.println("Welcome to Smart Tank Monitoring System server ...");
+    public static void main(String[] args) throws Exception {
 
-    // Start mqtt broker/server (cus <-> tms)
-    Broker broker = new BrokerImpl();
-    broker.initialize(broker.getMqttServer());
+        System.out.println("Welcome to Smart Tank Monitoring System server ...");
 
-    // Start http service (cus <-> dbs)
-    Vertx vertx = Vertx.vertx();
-    vertx.deployVerticle(new DataService(8080, broker));
-    System.out.println("HTTP dashboard API on port 8050");
+        // Start MQTT broker/server (CUS <-> TMS)
+        Broker broker = new BrokerImpl();
+        broker.initialize(broker.getMqttServer());
 
-    // Serial manager (cus <-> wcs)
-    ChannelControllerManager channelControllerManager = new ChannelControllerManagerImpl(broker);
+        // Start HTTP service (CUS <-> DBS)
+        final int httpPort = 8050;
+        Vertx vertx = Vertx.vertx();
+        vertx.deployVerticle(new DataService(httpPort, broker));
+        System.out.println("HTTP dashboard API on port " + httpPort);
 
-    // Periodic control loop every 400 ms
-    vertx.setPeriodic(400, id -> {
-      try {
-        Status st = broker.getSystemController().getStatus();
+        // Serial manager (CUS <-> WCS)
+        ChannelControllerManager channelControllerManager = new ChannelControllerManagerImpl(broker);
 
-        // If UNCONNECTED: notify WCS (and optionally force valve safe)
-        if (st == Status.UNCONNECTED) {
-          // force valve to safe position 0
-          channelControllerManager.sendMessageToArduino(0);
-          return;
-        }
+        // Prevent overlapping serial jobs if one blocks/gets slow
+        AtomicBoolean serialBusy = new AtomicBoolean(false);
 
-         // MANUAL: operator controls valveValue
-        if (broker.getSystemController().getIsManual() || st == Status.MANUAL) {
-          int manualValve = broker.getSystemController().getValveValue();
-          channelControllerManager.sendMessageToArduino(manualValve);
-          return;
-        }
+        // Periodic control loop every 400 ms
+        vertx.setPeriodic(400, id -> {
+            if (!serialBusy.compareAndSet(false, true)) {
+                return; // previous serial cycle still running
+            }
 
-        // AUTOMATIC: send commanded valve percent derived from policy (0/50/100)
-        int commandedValve = broker.getSystemController().getValveValue();
-        channelControllerManager.sendMessageToArduino(commandedValve);
+            Callable<Void> blockingSerialTask = () -> {
+                Status st = broker.getSystemController().getStatus();
 
-        // read back valve from Arduino and validate
-        String msg = channelControllerManager.receiveDataFromArduino();
-        if (msg != null && !msg.isBlank()) {
-                    broker.getSystemController().checkValveValue(msg, broker);
+                if (st == Status.UNCONNECTED) {
+                    //TODO: Safe fallback
+                    //channelControllerManager.sendMessageToArduino(0);
+                    // Debug
+                    System.out.println("### UNCONNECTED ###");
+                    return null;
                 }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    });
-  }
+
+                if (broker.getSystemController().getIsManual() || st == Status.MANUAL) {
+                    // Manual: operator command
+                    //channelControllerManager.sendMessageToArduino(broker.getSystemController().getValveValue());
+                    // Debug
+                    System.out.println("### MANUAL ###");
+                    return null;
+                }
+
+                // Automatic: commanded valve (0/50/100)
+                int commanded = broker.getSystemController().getValveValue();
+                //channelControllerManager.sendMessageToArduino(commanded);
+                // Debug
+                System.out.println("### AUTO ###");
+
+                // Optional readback + validation
+                //String msg = channelControllerManager.receiveDataFromArduino();
+                //if (msg != null && !msg.isBlank()) {
+                    //broker.getSystemController().checkValveValue(msg, broker);
+                //}
+
+                return null;
+            };
+
+            vertx.executeBlocking(blockingSerialTask, false, ar -> {
+                serialBusy.set(false);
+                if (ar.failed()) {
+                    ar.cause().printStackTrace();
+                }
+            });
+        });
+    }
 }

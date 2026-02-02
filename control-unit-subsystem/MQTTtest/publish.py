@@ -28,7 +28,7 @@ def publish(client):
     msg_count = 1
     while True:
         time.sleep(random.randint(1,7))
-        msg = "{" + '"Water Level:":' + '"' + str(random.randint(300,5000))+ '"}'
+        msg = "{" + '"WL":' + '"' + str(random.randint(300,5000))+ '"}'
         result = client.publish(topic, msg)
         # result: [0, 1]
         status = result[0]
@@ -44,7 +44,6 @@ def run():
     client = connect_mqtt()
     client.loop_start()
     publish(client)
-    sleep(20)
     client.loop_stop()
 
 

@@ -7,13 +7,6 @@ python dashboard.py
 
 poi apri: http://localhost:8057
 
-copypaste version
-cd .\control-unit-subsystem\HTTP\
-python backend.py
-python simulator.py
-cd .\dashboard-subsystem\  
-python dashboard.py
-http://localhost:8057
 
 ---
 
