@@ -17,6 +17,7 @@ import java.util.Objects;
 
 public class BrokerImpl implements Broker {
 
+    private final Vertx vertx;
     // List of connected MQTT clients subscribed to somehting
     private final List<MqttEndpoint> subscribedClients = new ArrayList<>();
     // the logic state holder (stores water level, frequency, mode...)
@@ -26,8 +27,10 @@ public class BrokerImpl implements Broker {
 
     // Creates Vertx and MQTT server object
     public BrokerImpl() {
-        Vertx vertx = Vertx.vertx();
-        this.mqttServer = this.createMqttServer(vertx);
+        this.vertx = Vertx.vertx();
+        this.mqttServer = this.createMqttServer(this.vertx);
+
+        this.vertx.setPeriodic(1000, id -> this.systemController.updateConnectivity()); // Timer per far scattare UNCONNECTED
     }
 
     private MqttServer createMqttServer(Vertx vertx) {

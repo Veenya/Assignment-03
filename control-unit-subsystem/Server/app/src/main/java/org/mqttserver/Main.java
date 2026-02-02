@@ -9,5 +9,11 @@ import org.mqttserver.services.mqtt.Broker;
 import org.mqttserver.services.mqtt.BrokerImpl;
 
 public class Main {
-    
+  public static void main(String[] args) {
+    Broker broker = new BrokerImpl();
+    broker.initialize(broker.getMqttServer());
+
+    Vertx vertx = Vertx.vertx();
+    vertx.deployVerticle(new DataService(8080, broker));
+  }
 }

@@ -24,10 +24,11 @@ dependencies {
     // This dependency is used by the application.
     implementation libs.guava
 
-
-    implementation "io.vertx:vertx-mqtt:4.5.8"
-    implementation "io.vertx:vertx-core:4.3.0"
-    implementation "io.vertx:vertx-web:4.3.0"
+    implementation platform("io.vertx:vertx-stack-depchain:4.5.8")
+    implementation "io.vertx:vertx-mqtt"
+    implementation "io.vertx:vertx-core"
+    implementation "io.vertx:vertx-web"
+    
     implementation "com.google.code.gson:gson:2.11.0"
     implementation "io.github.java-native:jssc:2.9.6"
 }

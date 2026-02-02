@@ -19,5 +19,7 @@ public interface SystemController {
     void checkValveValue(String msg, Broker broker);
 
     void setIsManual(boolean isManual);
-    boolean getIsManual();    
+    boolean getIsManual(); 
+    
+    void updateConnectivity();
 }
