@@ -29,6 +29,7 @@ dependencies {
     implementation "io.vertx:vertx-core:4.3.0"
     implementation "io.vertx:vertx-web:4.3.0"
     implementation "com.google.code.gson:gson:2.11.0"
+    implementation "io.github.java-native:jssc:2.9.6"
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
