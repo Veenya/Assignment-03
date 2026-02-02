@@ -6,7 +6,7 @@
 #define STATE_UPDATE_PERIOD  500 // periodo di invio stato da CommunicationCenter in ms
 
 
-#define POTENTIOMETER_PIN   88 // TODO cambiare 
+#define POTENTIOMETER_PIN   8 // TODO cambiare 
 #define BUTTON_PIN          5
 #define LCD_ADDR            0x27
 #define SERVO_PIN           3

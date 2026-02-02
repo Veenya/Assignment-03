@@ -18,22 +18,23 @@ public:
     void init();  // inizializza tutto l'hardware (lcd, pins, ecc.)
     void test();  // inizializza i test
 
-    /* ---------------------------------- ACCESSO AI DEVICE ---------------------------------- */
-
-    // Motore porta hangar
-    ServoMotor* getHangarDoorMotor();
+    // Motore della valvola
+    ServoMotor* getValveMotor();
 
     // LCD dell’operatore
     LiquidCrystal_I2C* getLcd();
 
-    // Bottone di reset allarme
-    ButtonImpl* getResetButton();
+    // Bottone di toggle modalita' auto/manual
+    ButtonImpl* getToggleButton();
+
+    // Potenziometro che serve a controllare il motore se in manual mode
+    PotentiometerImpl* getPotentiometer();
 
 private:
     // istanze concrete dei device
-    ServoMotor* pDoorMotor;
+    ServoMotor* pMotor;
     LiquidCrystal_I2C* pLcd;
-    ButtonImpl* pResetButton;
+    ButtonImpl* pButton;
     PotentiometerImpl* pPotentiometer;
 };
 

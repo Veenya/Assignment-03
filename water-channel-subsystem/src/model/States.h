@@ -1,7 +1,18 @@
 #ifndef __STATES__
 #define __STATES__
 
-enum class SystemState { AUTOMATIC, 
+enum class SystemMode {
+    AUTOMATIC,
+    MANUAL
+};
+
+enum class ConnectivityState {
+    CONNECTED,
+    UNCONNECTED
+};
+
+/**
+ * enum class SystemState { AUTOMATIC, 
                             MANUAL, 
                             UNCONNECTED, 
                             NOT_AVAILABLE, 
@@ -10,5 +21,5 @@ enum class SystemState { AUTOMATIC,
                             AUTO_OPEN_100, 
                             INVALID_STATUS 
                         };
-
+ */
 #endif

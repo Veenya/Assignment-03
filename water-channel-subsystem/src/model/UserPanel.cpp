@@ -1,5 +1,4 @@
 #include "UserPanel.h"
-#include <Arduino.h>
 #include "config.h"
 
 UserPanel::UserPanel(HWPlatform* pHW)

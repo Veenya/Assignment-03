@@ -3,121 +3,116 @@
 #include "kernel/Logger.h"
 #include "kernel/MsgService.h"
 
-CommunicationCenter::CommunicationCenter(Hangar* pHangar) : pHangar(pHangar) {}
+// Commands from CUS -> WCS (examples):
+//   "MODE,AUTO"
+//   "MODE,MANUAL"
+//   "VALVE,50"
+//   "WL,12.3"          (optional; for LCD)
+//   "PING"             (optional; heartbeat)
+//
+// Status from WCS -> CUS:
+//   "STATE,<MODE>,<CONN>,<VALVE>,<WL>"
+//   example: "STATE,AUTO,CONNECTED,50,12.3"
+
+CommunicationCenter::CommunicationCenter(TankSystem* sys) : pSys(sys) {}
 
 void CommunicationCenter::init() {
-    openDoorNotification = false;
-    takeOffNotification = false;
-    landingNotification = false;
-    alarmNotification = false;
-    resetAlarmsNotification = false;
+    // flags for tasks (optional)
+    newModeCmd = false;
+    newValveCmd = false;
+
+    // connectivity tracking
+    lastRxMs = 0;
+    // T2 timeout (ms) - set from config.h if you want
+    T2_MS = 15000;
 }
 
 void CommunicationCenter::notifyNewState() {
-    this->hangarState = pHangar->getHangarState();
-    String hangarStateStr;
-    if (hangarState == HangarState::ALARM) {
-        hangarStateStr = "2";
-    } else if (hangarState == HangarState::PRE_ALARM) {
-        hangarStateStr = "1";
-    } else {  // NORMAL
-        hangarStateStr = "0";
-    }
+    // Send compact state snapshot to CUS
+    String modeStr = (pSys->getMode() == SystemMode::MANUAL) ? "MANUAL" : "AUTO";
+    String connStr = (pSys->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
 
-    droneState = pHangar->getDroneState();
-    String droneStateStr = "-1";
-    if (droneState == DroneState::REST) {
-        droneStateStr = "0";
-    } else if (droneState == DroneState::OPERATING) {
-        droneStateStr = "1";
-    } else {
-        droneStateStr = "2";
-    }
-    droneAbove = pHangar->isDroneAbove();
-    String droneAboveStr = "-1";
-    if (droneAbove) {
-        droneAboveStr = "1";
-    } else {
-        droneAboveStr = "0";
-    }
+    int valve = pSys->getValveOpening();
+    float wl = pSys->getWaterLevel(); // if you don't use WL on WCS, send 0.0
 
-    droneDistance = pHangar->getDistance();  // solitamente tra 0 e 0.2
-    // int droneDistance = 10;
-    currentTemp = pHangar->getTemperature();
-
-  // stato del hangar, stato drone, distanza drone, temperatura, drone above
-  MsgService.sendMsg(String("STATE,") + 
-                      hangarStateStr + "," + 
-                      droneStateStr + "," + 
-                      String(droneDistance).substring(0,5) + "," +  
-                      String(currentTemp).substring(0,5) + "," +
-                      String(droneAboveStr));  
+    MsgService.sendMsg(
+        String("STATE,") +
+        modeStr + "," +
+        connStr + "," +
+        String(valve) + "," +
+        String(wl, 1)
+    );
 }
 
 void CommunicationCenter::sync() {
+    // 1) Read incoming messages from CUS (serial)
     if (MsgService.isMsgAvailable()) {
         Msg* msg = MsgService.receiveMsg();
         if (msg != NULL) {
-            String msgContent = msg->getContent();
-            Logger.log("Received msg: " + msgContent);
-            if (msgContent == "to") {  // Take off
-                openDoorNotification = true;
-                takeOffNotification = true;
-            } else if (msgContent == "la") {  // Landing
-                openDoorNotification = true;
-                landingNotification = true;
-            } else if (msgContent == "ao") {  // Alarm on
-                pHangar->raiseAlarm();
-            } else if (msgContent == "af") {  // Alarm off
-                pHangar->resetAlarm();
+            String content = msg->getContent();
+            Logger.log("Received msg: " + content);
+
+            // Any valid message means CUS is reachable -> CONNECTED
+            lastRxMs = millis();
+            pSys->setConnectivity(ConnectivityState::CONNECTED);
+
+            // Parse CSV-like messages
+            // Expected formats:
+            // MODE,AUTO
+            // MODE,MANUAL
+            // VALVE,NN
+            // WL,XX.X
+            // PING
+            if (content == "PING") {
+                // nothing else to do
+            } else if (content.startsWith("MODE,")) {
+                String m = content.substring(5);
+                m.trim();
+                if (m == "MANUAL") {
+                    pSys->setMode(SystemMode::MANUAL);
+                    newModeCmd = true;
+                } else if (m == "AUTO") {
+                    pSys->setMode(SystemMode::AUTOMATIC);
+                    newModeCmd = true;
+                }
+            } else if (content.startsWith("VALVE,")) {
+                String vStr = content.substring(6);
+                vStr.trim();
+                int v = vStr.toInt();
+                pSys->setValveOpening(v);
+                newValveCmd = true;
+            } else if (content.startsWith("WL,")) {
+                // optional: show WL sent by CUS on LCD
+                String wlStr = content.substring(3);
+                wlStr.trim();
+                float wl = wlStr.toFloat();
+                pSys->setWaterLevel(wl);
             }
+
             delete msg;
         }
     }
-    pHangar->getResetButton()->sync();
-    // Logger.log("Reset Alarm Pressed" + String(pHangar->getResetButton()->isPressed()));
-    if (pHangar->getResetButton()->isPressed()) {
-        pHangar->resetAlarm();
+
+    // 2) Connectivity timeout -> UNCONNECTED (spec-like)
+    unsigned long now = millis();
+    if (lastRxMs == 0) {
+        // never received anything yet
+        pSys->setConnectivity(ConnectivityState::UNCONNECTED);
+    } else if (now - lastRxMs > T2_MS) {
+        pSys->setConnectivity(ConnectivityState::UNCONNECTED);
     }
 }
 
-//* OPEN DOOR
-bool CommunicationCenter::checkAndResetOpenDoorRequest() {
-    bool request = this->openDoorNotification;
-    openDoorNotification = false;
-    return request;
+/* -------- Optional "checkAndReset" for tasks -------- */
+
+bool CommunicationCenter::checkAndResetNewModeCmd() {
+    bool r = newModeCmd;
+    newModeCmd = false;
+    return r;
 }
 
-//* TAKEOFF
-bool CommunicationCenter::checkAndResetTakeOffRequest() {
-    bool request = this->takeOffNotification;
-    takeOffNotification = false;
-    return request;
-}
-bool CommunicationCenter::checkTakeOffRequest() {
-    return this->takeOffNotification;
-}
-
-//* LANDING
-bool CommunicationCenter::checkAndResetLandingRequest() {
-    bool request = this->landingNotification;
-    landingNotification = false;
-    return request;
-}
-
-bool CommunicationCenter::checkLandingRequest() {
-    return this->landingNotification;
-}
-
-//* ALLARM
-bool CommunicationCenter::checkAndResetAlarmRequest() {
-    bool request = this->resetAlarmsNotification;
-    resetAlarmsNotification = false;
-    return request;
-}
-
-bool CommunicationCenter::notifyAlarm() {
-    bool request = this->alarmNotification;
-    alarmNotification = false;
-    return request;
+bool CommunicationCenter::checkAndResetNewValveCmd() {
+    bool r = newValveCmd;
+    newValveCmd = false;
+    return r;
 }
