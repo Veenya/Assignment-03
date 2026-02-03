@@ -43,5 +43,5 @@ void setup() {
 
 void loop() {
     //scheduler.schedule();
-    pHWPlatform->test();
+    pTankTask->test();
 }

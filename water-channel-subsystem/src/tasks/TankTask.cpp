@@ -11,7 +11,8 @@ TankTask::TankTask(HWPlatform* hw)
       connectivity(ConnectivityState::UNCONNECTED),
       waterLevel(0.0f),
       valveOpening(0),
-      lastButtonState(false) {}
+      lastButtonState(false)
+      {}
 
 void TankTask::init() {
     mode = SystemMode::AUTOMATIC;
@@ -19,6 +20,8 @@ void TankTask::init() {
     waterLevel = 0.0f;
     valveOpening = 0;
     lastButtonState = false;
+
+
 
     refreshOutputs();
 
@@ -28,32 +31,76 @@ void TankTask::init() {
 }
 
 void TankTask::tick() {
-    bool pressed = isModeButtonPressed();
-    if (pressed) {
-        if (mode == SystemMode::AUTOMATIC) {
-            mode = SystemMode::MANUAL;
-            if (DEBUG) {
-                Serial.println("[WCS] Mode toggled -> MANUAL");
-                //displayManual();
-            }
-        } else {
-            mode = SystemMode::AUTOMATIC;
-            if (DEBUG) {
-                Serial.println("[WCS] Mode toggled -> AUTOMATIC");
-                //displayAutomatic();
-            }
-        }
+    // 1) Mode toggle (debounced, toggle once per press) -> like HWPlatform::test()
+    if (isModeButtonPressed()) {
+        toggleMode();
     }
 
+    // 2) Manual pot -> valve opening (keep your rule: only if CONNECTED)
     if (mode == SystemMode::MANUAL && connectivity == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
-        //displayOpeningLevel(potPercent);
     }
 
     // 3) Apply outputs
     applyValveToServo();
     updateDisplay();
+
+    // 4) Serial debug similar to test()
+    if (DEBUG) {
+        int potPct = 0;
+        auto pot = pHW->getPotentiometer();
+        if (pot) {
+            pot->sync();
+            potPct = (int)pot->position();
+        }
+
+        Serial.print("MODE=");
+        Serial.print(mode == SystemMode::AUTOMATIC ? "AUTO" : "MANUAL");
+        Serial.print("  POT=");
+        Serial.print(potPct);
+        Serial.print("%  VALVE=");
+        Serial.print(getValveOpening());
+        Serial.println("%");
+    }
+}
+
+void TankTask::test() {
+    //mode;              // 0=AUTO, 1=MANUAL (persists)
+    static int lastReading = HIGH;    // because INPUT_PULLUP: released=HIGH
+    static unsigned long lastDebounceTime = 0;
+    const unsigned long debounceMs = 40;
+
+    // Read raw button (pressed = LOW)
+    int reading = digitalRead(BUTTON_PIN);
+
+    // Debounce: detect stable change
+    if (reading != lastReading) {
+        lastDebounceTime = millis();
+        lastReading = reading;
+    }
+
+    // When stable for debounceMs and currently pressed -> toggle once
+    static int stableState = HIGH;
+    if ((millis() - lastDebounceTime) > debounceMs) {
+        if (reading != stableState) {
+            stableState = reading;
+
+            if (stableState == LOW) {     // pressed event
+                // toggle
+                toggleMode();
+            }
+        }
+    }
+
+    // Pot (your position() should already be 0..100)
+    int pct = readManualValveFromPot();
+    
+    //pMotor->setPosition(pct);
+    setValveOpening(pct);
+    // servo->setPosition(angle);
+
+    refreshOutputs();
 }
 
 /* --------- Mode & connectivity --------- */
@@ -128,23 +175,24 @@ void TankTask::applyValveToServo() {
 
 /* --------- Operator inputs --------- */
 
+// Debounced pressed-event (toggle once per press), same logic as HWPlatform::test()
 bool TankTask::isModeButtonPressed() {
     auto btn = pHW->getToggleButton();
     if (!btn) return false;
 
-    return btn->isClicked();
-
-    /*
-    auto btn = pHW->getToggleButton();
-    if (!btn) return false;
-
+    // Update button internal state
     btn->sync();
-    bool current = btn->isPressed();
 
-    // rising edge detect
-    bool pressedEdge = (current && !lastButtonState);
-    lastButtonState = current;
-    return pressedEdge;*/
+    // We want: reading == LOW when pressed, HIGH when released (INPUT_PULLUP semantics)
+    // Assumption: btn->isPressed() == true when physically pressed.
+    // If in your implementation it's inverted, change this line accordingly.
+    int reading = btn->isPressed() ? LOW : HIGH;
+
+    // Debounce: detect change
+
+
+
+    return false;
 }
 
 int TankTask::readManualValveFromPot() {
@@ -156,7 +204,6 @@ int TankTask::readManualValveFromPot() {
     // Your PotentiometerImpl::position() should already be 0..100
     int percent = (int)pot->position();
     return clampPercent(percent);
-    
 }
 
 /* --------- Outputs: LCD --------- */

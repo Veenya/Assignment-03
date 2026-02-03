@@ -96,6 +96,4 @@ void HWPlatform::test() {
     if (pct < 10)  pLcd->print(" ");
     pLcd->print(pct);
     pLcd->print("%   ");
-
-    
 }

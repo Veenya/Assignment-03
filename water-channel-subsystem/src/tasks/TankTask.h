@@ -20,6 +20,7 @@ public:
 
     void init();
     void tick();
+    void test();
 
     /* --------- Mode & connectivity --------- */
     void setMode(SystemMode mode);
