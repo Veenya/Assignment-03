@@ -76,6 +76,21 @@ SystemMode TankSystem::getMode() {
     return mode;
 }
 
+void TankSystem::toggleMode() {
+    if (mode == SystemMode::AUTOMATIC) {
+        mode = SystemMode::MANUAL;
+        if (DEBUG) {
+            Serial.println("[WCS] Mode toggled -> MANUAL");
+        }
+    } else {
+        mode = SystemMode::AUTOMATIC;
+        if (DEBUG) {
+            Serial.println("[WCS] Mode toggled -> AUTOMATIC");
+        }
+    }
+}
+
+
 void TankSystem::setConnectivity(ConnectivityState s) {
     connectivity = s;
 

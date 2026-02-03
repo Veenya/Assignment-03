@@ -31,6 +31,7 @@ public:
     /* --------- Mode & connectivity --------- */
     void setMode(SystemMode mode);
     SystemMode getMode();
+    void toggleMode();
 
     void setConnectivity(ConnectivityState state);
     ConnectivityState getConnectivity();
