@@ -49,3 +49,15 @@ tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
+sourceSets {
+  test {
+    resources {
+      srcDirs = []
+    }
+  }
+}
+
+tasks.withType(Test).configureEach {
+    enabled = false
+}

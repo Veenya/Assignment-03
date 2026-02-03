@@ -33,8 +33,6 @@ void setup() {
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
     scheduler.addTask(pCommunicationTask);
-    // scheduler.addTask(pHangarTask);
-    // scheduler.addTask(pTemperatureTask);
 }
 
 void loop() {

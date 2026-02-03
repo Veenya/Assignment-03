@@ -48,44 +48,53 @@ LiquidCrystal_I2C* HWPlatform::getLcd() {
 /// ------------------ TEST ------------------
 
 void HWPlatform::test() {
-    // Requisiti: pLcd inizializzato (chiama init() prima)
-    static bool prevPressed = false;
+    static int mode;              // 0=AUTO, 1=MANUAL (persists)
+    static int lastReading = HIGH;    // because INPUT_PULLUP: released=HIGH
+    static unsigned long lastDebounceTime = 0;
+    const unsigned long debounceMs = 40;
 
-    // Leggi bottone (se ButtonImpl usa INPUT_PULLUP: premuto = LOW)
-    bool nowPressed = pButton->isPressed();   // se non esiste, vedi nota sotto
+    // Read raw button (pressed = LOW)
+    int reading = digitalRead(BUTTON_PIN);
 
-    // Edge detect: vero solo al fronte di salita (pressione)
-    bool justPressed = (nowPressed && !prevPressed);
-    prevPressed = nowPressed;
+    // Debounce: detect stable change
+    if (reading != lastReading) {
+        lastDebounceTime = millis();
+        lastReading = reading;
+    }
 
-    // Leggi potenziometro
-    int raw = pPotentiometer->position();     // tipicamente 0..1023
-    int pct = map(raw, 0, 1023, 0, 100);
+    // When stable for debounceMs and currently pressed -> toggle once
+    static int stableState = HIGH;
+    if ((millis() - lastDebounceTime) > debounceMs) {
+        if (reading != stableState) {
+            stableState = reading;
 
-    // Stampa su Serial
-    Serial.print("BTN=");
-    Serial.print(nowPressed ? "1" : "0");
+            if (stableState == LOW) {     // pressed event
+                mode = 1 - mode;          // toggle
+            }
+        }
+    }
+
+    // Pot (your position() should already be 0..100)
+    int pct = (int)pPotentiometer->position();
+
+    // Serial
+    Serial.print("MODE=");
+    Serial.print(mode == 0 ? "AUTO" : "MANUAL");
     Serial.print("  POT=");
-    Serial.print(raw);
-    Serial.print("  PCT=");
-    Serial.println(pct);
+    Serial.print(pct);
+    Serial.println("%");
 
-    // Mostra su LCD
+    // LCD
     pLcd->setCursor(0, 0);
-    pLcd->print("BTN:");
-    pLcd->print(nowPressed ? "ON " : "OFF");
-    pLcd->print(" POT:");
+    pLcd->print("MODE:");
+    pLcd->print(mode == 0 ? "AUTO   " : "MANUAL ");
+
+    pLcd->setCursor(0, 1);
+    pLcd->print("POT:");
     if (pct < 100) pLcd->print(" ");
     if (pct < 10)  pLcd->print(" ");
     pLcd->print(pct);
-    pLcd->print("%");
+    pLcd->print("%   ");
 
-    pLcd->setCursor(0, 1);
-    if (justPressed) {
-        pLcd->print("Pressed!        ");
-    } else {
-        pLcd->print("                ");
-    }
-
-    delay(100);
+    delay(50);
 }

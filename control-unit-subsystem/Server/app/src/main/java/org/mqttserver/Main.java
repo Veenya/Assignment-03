@@ -62,7 +62,7 @@ public class Main {
                 
                 //System.out.println("### AUTO ###");
 
-                // Optional readback + validation
+                // readback + validation
                 String msg = channelControllerManager.receiveDataFromArduino();
                 if (msg != null && !msg.isBlank()) {
                     broker.getSystemController().checkValveValue(msg, broker);

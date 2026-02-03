@@ -1,14 +1,14 @@
 package org.mqttserver.policy;
 
-import io.vertx.core.buffer.Buffer;
+//import io.vertx.core.buffer.Buffer;
 import org.mqttserver.presentation.Status;
 import org.mqttserver.services.mqtt.Broker;
 import org.mqttserver.presentation.JSONUtils;
-import org.mqttserver.presentation.MessageToArduino;
+//import org.mqttserver.presentation.MessageToArduino;
 import org.mqttserver.presentation.MessageFromArduino;
 
 import java.util.EnumMap;
-import java.util.HashMap;
+//import java.util.HashMap;
 import java.util.Map;
 
 //TODO: UNCONNECTED non può funzionare se non chiami updateConnectivity()
