@@ -1,6 +1,5 @@
 #include "CommunicationCenter.h"
 #include <Arduino.h>
-#include "kernel/Logger.h"
 #include "kernel/MsgService.h"
 
 // Commands from CUS -> WCS (examples):
@@ -50,8 +49,6 @@ void CommunicationCenter::sync() {
         Msg* msg = MsgService.receiveMsg();
         if (msg != NULL) {
             String content = msg->getContent();
-            Logger.log("Received msg: " + content);
-
             // Any valid message means CUS is reachable -> CONNECTED
             lastRxMs = millis();
             pSys->setConnectivity(ConnectivityState::CONNECTED);

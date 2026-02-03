@@ -1,7 +1,6 @@
 #include "CommunicationTask.h"
 #include <Arduino.h>
 #include "config.h"
-#include "kernel/Logger.h"
 
 CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, TankSystem* pTankSystem)
     : pCommunicationCenter(pCommunicationCenter), pTankSystem(pTankSystem) {

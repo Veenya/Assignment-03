@@ -72,7 +72,7 @@ void TankSystem::setMode(SystemMode m) {
     mode = m;
 }
 
-SystemMode TankSystem::getMode() const {
+SystemMode TankSystem::getMode() {
     return mode;
 }
 
@@ -85,15 +85,15 @@ void TankSystem::setConnectivity(ConnectivityState s) {
     }
 }
 
-ConnectivityState TankSystem::getConnectivity() const {
+ConnectivityState TankSystem::getConnectivity() {
     return connectivity;
 }
 
-bool TankSystem::isManual() const {
+bool TankSystem::isManual() {
     return mode == SystemMode::MANUAL;
 }
 
-bool TankSystem::isUnconnected() const {
+bool TankSystem::isUnconnected() {
     return connectivity == ConnectivityState::UNCONNECTED;
 }
 
@@ -103,7 +103,7 @@ void TankSystem::setWaterLevel(float wl) {
     waterLevel = wl;
 }
 
-float TankSystem::getWaterLevel() const {
+float TankSystem::getWaterLevel() {
     return waterLevel;
 }
 
@@ -113,7 +113,7 @@ void TankSystem::setValveOpening(int percent) {
     valveOpening = clampPercent(percent);
 }
 
-int TankSystem::getValveOpening() const {
+int TankSystem::getValveOpening() {
     return valveOpening;
 }
 
@@ -133,7 +133,7 @@ void TankSystem::applyValveToServo() {
 /* --------- Operator inputs --------- */
 
 bool TankSystem::isModeButtonPressed() {
-    auto btn = pHW->getModeButton(); // <-- rename to your HWPlatform method
+    auto btn = pHW->getToggleButton();
     if (!btn) return false;
 
     btn->sync();
@@ -151,7 +151,7 @@ int TankSystem::readManualValveFromPot() {
 
     pot->sync();
     // assume pot returns 0..1023; map to 0..100
-    int raw = pot->getValue();
+    int raw = pot->position();
     int percent = map(raw, 0, 1023, 0, 100);
     return clampPercent(percent);
 }
@@ -187,13 +187,13 @@ void TankSystem::updateDisplay() {
 
 /* --------- helpers --------- */
 
-int TankSystem::clampPercent(int v) const {
+int TankSystem::clampPercent(int v) {
     if (v < 0) return 0;
     if (v > 100) return 100;
     return v;
 }
 
-int TankSystem::percentToServoAngle(int percent) const {
+int TankSystem::percentToServoAngle(int percent) {
     // Spec: 0% -> 0°, 100% -> 90°
     return map(percent, 0, 100, 0, 90);
 }

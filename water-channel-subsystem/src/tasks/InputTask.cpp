@@ -1,8 +1,10 @@
+
+/*
 #include "InputTask.h"
 
 #include "Arduino.h"
 
-#include "WaterChannelController.h"
+
 #include "components/api/ButtonImpl.h"
 #include "components/api/PotentiometerImpl.h"
 #include "system/Logger.h"
@@ -84,3 +86,5 @@ void InputTask::updatePressedState()
 {
     pressed = button->isPressed();
 }
+
+*/

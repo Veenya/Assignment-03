@@ -1,10 +1,12 @@
+/*
+
 #ifndef __INPUT_TASK__
 #define __INPUT_TASK__
 
-#include "system/Task.h"
-#include "WaterChannelController.h"
-#include "components/api/Button.h"
-#include "components/api/Potentiometer.h"
+#include "kernel/Task.h"
+#include "model/TankSystem.h"
+#include "devices/button/ButtonImpl.h"
+#include "devices/potentiometer/PotentiometerImpl.h"
 
 /*
  * InputTask (WCS)
@@ -42,3 +44,6 @@ private:
 };
 
 #endif
+
+
+*/

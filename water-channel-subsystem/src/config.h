@@ -14,7 +14,7 @@
 #define COMMUNICATION_PERIOD 500       // tempo tick communication center
 
 #define MIN_ANALOG_READ     0
-#define MAX_ANALOG_READ     1000
+#define MAX_ANALOG_READ     1023
 #define MIN_POTENTIOMETER   0
 #define MAX_POTENTIOMETER   100
 #define POTENTIOMETER_TOLERANCE 20

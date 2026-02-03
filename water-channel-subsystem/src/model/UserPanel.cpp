@@ -5,7 +5,7 @@ UserPanel::UserPanel(HWPlatform* pHW)
     : pHW(pHW), pResetButton(nullptr), resetPressed(false), prevResetPressed(false) {
     // Prendiamo il bottone di reset dalla piattaforma hardware
     if (pHW) {
-        pResetButton = pHW->getResetButton();
+        pResetButton = pHW->getToggleButton();
         pLcd = pHW->getLcd();
     }
 }

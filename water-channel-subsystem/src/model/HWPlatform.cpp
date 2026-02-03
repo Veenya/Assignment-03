@@ -27,10 +27,6 @@ void HWPlatform::init() {
     Serial.println("HWPlatform inizializzata");
 }
 
-void HWPlatform::test() {
-    // TODO: opzionale
-}
-
 // --- getters ---
 
 ServoMotor* HWPlatform::getValveMotor() {
@@ -47,4 +43,49 @@ PotentiometerImpl* HWPlatform::getPotentiometer() {
 
 LiquidCrystal_I2C* HWPlatform::getLcd() {
     return pLcd;
+}
+
+/// ------------------ TEST ------------------
+
+void HWPlatform::test() {
+    // Requisiti: pLcd inizializzato (chiama init() prima)
+    static bool prevPressed = false;
+
+    // Leggi bottone (se ButtonImpl usa INPUT_PULLUP: premuto = LOW)
+    bool nowPressed = pButton->isPressed();   // se non esiste, vedi nota sotto
+
+    // Edge detect: vero solo al fronte di salita (pressione)
+    bool justPressed = (nowPressed && !prevPressed);
+    prevPressed = nowPressed;
+
+    // Leggi potenziometro
+    int raw = pPotentiometer->position();     // tipicamente 0..1023
+    int pct = map(raw, 0, 1023, 0, 100);
+
+    // Stampa su Serial
+    Serial.print("BTN=");
+    Serial.print(nowPressed ? "1" : "0");
+    Serial.print("  POT=");
+    Serial.print(raw);
+    Serial.print("  PCT=");
+    Serial.println(pct);
+
+    // Mostra su LCD
+    pLcd->setCursor(0, 0);
+    pLcd->print("BTN:");
+    pLcd->print(nowPressed ? "ON " : "OFF");
+    pLcd->print(" POT:");
+    if (pct < 100) pLcd->print(" ");
+    if (pct < 10)  pLcd->print(" ");
+    pLcd->print(pct);
+    pLcd->print("%");
+
+    pLcd->setCursor(0, 1);
+    if (justPressed) {
+        pLcd->print("Pressed!        ");
+    } else {
+        pLcd->print("                ");
+    }
+
+    delay(100);
 }
