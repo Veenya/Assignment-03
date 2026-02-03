@@ -1,35 +1,18 @@
-
-/*
 #include "InputTask.h"
-
 #include "Arduino.h"
+#include "config.h"
 
+InputTask::InputTask(TankSystem* pTankSystem, UserPanel* pUserPanel, Button* button, PotentiometerImpl* pot)
+    : pTankSystem(pTankSystem) {
+        //TODO: metti qualcosa?
+        Serial.println("Siamo in InputTask");
+    }
 
-#include "components/api/ButtonImpl.h"
-#include "components/api/PotentiometerImpl.h"
-#include "system/Logger.h"
-
-// #define DEBUG
-
-InputTask::InputTask(int period, WaterChannelController *WaterChannelController, int buttonPin, int potPin)
-    : Task(period),
-      waterChannelController(WaterChannelController),
-      pressed(false),
-      button(new ButtonImpl(buttonPin, true)),
-      potentiometer(new PotentiometerImpl(potPin, 20)),
-      oldPotPos(0),
-      lastButtonPress(0)
-{
-    waterChannelController->posChange = true;
-    oldPotPos = potentiometer->position();
+void InputTask::tick() {
+    pTankSystem->sync();
 }
 
-void InputTask::tick()
-{
-    handleButtonPress();
-    handleModeChange();
-    updatePressedState();
-};
+
 
 void InputTask::handleButtonPress()
 {
@@ -40,51 +23,47 @@ void InputTask::handleButtonPress()
         {
             lastButtonPress = currentMillis;
             toggleMode();
-            waterChannelController->commChange = true;
         }
     }
 }
+void InputTask::toggleMode() {
+    SystemMode current = pTankSystem->getMode();
+    SystemMode next = (current == SystemMode::MANUAL)
+                        ? SystemMode::AUTOMATIC
+                        : SystemMode::MANUAL;
 
-void InputTask::toggleMode()
-{
-    waterChannelController->activeMode = waterChannelController->activeMode == Mode::MANUAL ? Mode::AUTOMATIC : Mode::MANUAL;
+    pTankSystem->setMode(next);
 }
 
-void InputTask::handleModeChange()
-{
-    if (waterChannelController->activeMode == Mode::MANUAL)
-    {
+void InputTask::handleModeChange() {
+    if (pTankSystem->isManual()) {
         handleManualMode();
-    }
-    else if (waterChannelController->activeMode == Mode::AUTOMATIC)
-    {
+    } else {
         handleAutomaticMode();
     }
 }
 
+
 void InputTask::handleManualMode()
 {
-    if (potentiometer->moved())
+    if (pot->moved())
     {
-        waterChannelController->activePosition = potentiometer->position();
-        waterChannelController->posChange = true;
+        pTankSystem->valveOpening = pot->position();
     }
 }
 
 void InputTask::handleAutomaticMode()
 {
-    String receivedContent = messageReceiver.getReceivedContent();
-    String systemState = jsonProcessor.getSystemState(receivedContent);
-    int valveValue = jsonProcessor.getValveValue(receivedContent);
-    waterChannelController->activePosition = valveValue;
+    //String receivedContent = messageReceiver.getReceivedContent();
+    //String systemState = jsonProcessor.getSystemState(receivedContent);
+    //int valveValue = jsonProcessor.getValveValue(receivedContent);
+    //waterChannelController->activePosition = valveValue;
     // motor->setPosition(valveValue); TODO: fix this
     // logger("System state: " + systemState);
     // logger("Valve value: " + String(valveValue));
 }
 
-void InputTask::updatePressedState()
-{
-    pressed = button->isPressed();
-}
-
-*/
+//void InputTask::updatePressedState()
+//{
+    //pressed = button->isPressed();
+//}

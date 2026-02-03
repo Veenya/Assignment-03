@@ -64,7 +64,6 @@ public:
     // LCD shows: valve%, mode (AUTO/MANUAL) or UNCONNECTED
     void updateDisplay();
 
-private:
     HWPlatform* pHW;
 
     // state

@@ -1,5 +1,3 @@
-/*
-
 #ifndef __INPUT_TASK__
 #define __INPUT_TASK__
 
@@ -7,35 +5,34 @@
 #include "model/TankSystem.h"
 #include "devices/button/ButtonImpl.h"
 #include "devices/potentiometer/PotentiometerImpl.h"
-
-/*
- * InputTask (WCS)
- * - Handles local human interaction
- * - Button: toggle MANUAL / AUTOMATIC
- * - Potentiometer: valve value in MANUAL mode only
- *
- * Runs every ~50 ms
- */
+//TODO: serve il servo?
 class InputTask : public Task {
 public:
-    InputTask(
-        int period,
-        WaterChannelController* controller,
-        int buttonPin,
-        int potPin
-    );
-
-    void tick() override;
+    InputTask(TankSystem* pTankSystem, UserPanel* pUserPanel, Button* button, PotentiometerImpl* pot);
+    void tick();
 
 private:
-    void handleButton();
+    void handleButtonPress();
+    void toggleMode();
     void handlePotentiometer();
+    long elapsedTimeInState();
+    void handleModeChange();
+    void handleManualMode();
+    void handleAutomaticMode();
 
-    WaterChannelController* controller;
+    long stateTimestamp;
+    bool justEntered;
+
+    bool pressed;
+    unsigned long lastButtonPress;
+
+    SystemMode state;
 
     Button* button;
-    Potentiometer* potentiometer;
-
+    PotentiometerImpl* pot;
+    UserPanel* pUserPanel;
+    TankSystem* pTankSystem;
+    
     bool lastButtonState;
     unsigned long lastDebounceTime;
     static const unsigned long DEBOUNCE_DELAY = 50;
@@ -44,6 +41,3 @@ private:
 };
 
 #endif
-
-
-*/

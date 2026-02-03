@@ -6,12 +6,17 @@
 #include "model/HWPlatform.h"
 #include "model/UserPanel.h"
 #include "tasks/CommunicationTask.h"
+#include "tasks/InputTask.h"
 
 Scheduler scheduler;
 HWPlatform* pHWPlatform;
 UserPanel* pUserPanel;
 TankSystem *pTankSystem;
 CommunicationCenter* pCommunicationCenter;
+
+//todo tolgiere obrobrio
+Button* button;
+PotentiometerImpl* pot;
 
 void setup() {
     MsgService.init();
@@ -32,7 +37,12 @@ void setup() {
     Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pTankSystem);
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
+    // TODO: mettici HWPlatform dioc ane
+    Task* pInputTask = new InputTask(pTankSystem, pUserPanel, button, pot); // TankSystem* pTankSystem, UserPanel* pUserPanel, Button* button, PotentiometerImpl* pot
+    pInputTask->init();
+
     scheduler.addTask(pCommunicationTask);
+    scheduler.addTask(pInputTask);
 }
 
 void loop() {
