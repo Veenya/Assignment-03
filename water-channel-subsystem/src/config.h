@@ -4,6 +4,8 @@
 
 #define SCHEDULER_PERIOD     100 // interrupt fa ripartire lo scheduler ogni n millisecondi
 #define STATE_UPDATE_PERIOD  500 // periodo di invio stato da CommunicationCenter in ms
+#define COMMUNICATION_PERIOD 500       // tempo tick communication center
+#define TANK_PERIOD          500
 
 
 #define POTENTIOMETER_PIN   A0 
@@ -11,7 +13,7 @@
 #define LCD_ADDR            0x27
 #define SERVO_PIN           3
 
-#define COMMUNICATION_PERIOD 500       // tempo tick communication center
+
 
 #define MIN_ANALOG_READ     0
 #define MAX_ANALOG_READ     1023

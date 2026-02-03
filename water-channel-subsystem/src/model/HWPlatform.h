@@ -5,7 +5,7 @@
 #include "config.h"  // pins
 
 #include "devices/button/ButtonImpl.h"              // button
-#include "devices/servo_motor/servo_motor.h"        // servo motor
+#include "devices/servo_motor/servo_motor_impl.h"        // servo motor
 #include "devices/potentiometer/PotentiometerImpl.h"        // potentiometer
 
 #include <LiquidCrystal_I2C.h>  // LCD screen
@@ -19,7 +19,7 @@ public:
     void test();  // inizializza i test
 
     // Motore della valvola
-    ServoMotor* getValveMotor();
+    ServoMotorImpl* getValveMotor();
 
     // LCD dell’operatore
     LiquidCrystal_I2C* getLcd();
@@ -32,7 +32,7 @@ public:
 
 private:
     // istanze concrete dei device
-    ServoMotor* pMotor;
+    ServoMotorImpl* pMotor;
     LiquidCrystal_I2C* pLcd;
     ButtonImpl* pButton;
     PotentiometerImpl* pPotentiometer;

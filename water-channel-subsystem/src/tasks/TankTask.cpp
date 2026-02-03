@@ -13,7 +13,7 @@ TankTask::TankTask(HWPlatform* hw)
       valveOpening(0),
       lastButtonState(false) {}
 
-void TankSystem::init() {
+void TankTask::init() {
     mode = SystemMode::AUTOMATIC;
     connectivity = ConnectivityState::UNCONNECTED;
     waterLevel = 0.0f;
@@ -27,6 +27,35 @@ void TankSystem::init() {
     }
 }
 
+void TankTask::tick() {
+    bool pressed = isModeButtonPressed();
+    if (pressed) {
+        if (mode == SystemMode::AUTOMATIC) {
+            mode = SystemMode::MANUAL;
+            if (DEBUG) {
+                Serial.println("[WCS] Mode toggled -> MANUAL");
+                //displayManual();
+            }
+        } else {
+            mode = SystemMode::AUTOMATIC;
+            if (DEBUG) {
+                Serial.println("[WCS] Mode toggled -> AUTOMATIC");
+                //displayAutomatic();
+            }
+        }
+    }
+
+    if (mode == SystemMode::MANUAL && connectivity == ConnectivityState::CONNECTED) {
+        int potPercent = readManualValveFromPot();
+        setValveOpening(potPercent);
+        //displayOpeningLevel(potPercent);
+    }
+
+    // 3) Apply outputs
+    applyValveToServo();
+    updateDisplay();
+}
+
 /* --------- Mode & connectivity --------- */
 
 void TankTask::setMode(SystemMode m) {
@@ -37,7 +66,7 @@ SystemMode TankTask::getMode() const {
     return mode;
 }
 
-void TankSystem::toggleMode() {
+void TankTask::toggleMode() {
     mode = (mode == SystemMode::AUTOMATIC) ? SystemMode::MANUAL : SystemMode::AUTOMATIC;
 
     if (DEBUG) {
@@ -103,13 +132,19 @@ bool TankTask::isModeButtonPressed() {
     auto btn = pHW->getToggleButton();
     if (!btn) return false;
 
+    return btn->isClicked();
+
+    /*
+    auto btn = pHW->getToggleButton();
+    if (!btn) return false;
+
     btn->sync();
     bool current = btn->isPressed();
 
     // rising edge detect
     bool pressedEdge = (current && !lastButtonState);
     lastButtonState = current;
-    return pressedEdge;
+    return pressedEdge;*/
 }
 
 int TankTask::readManualValveFromPot() {
@@ -121,6 +156,7 @@ int TankTask::readManualValveFromPot() {
     // Your PotentiometerImpl::position() should already be 0..100
     int percent = (int)pot->position();
     return clampPercent(percent);
+    
 }
 
 /* --------- Outputs: LCD --------- */

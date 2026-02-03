@@ -24,7 +24,7 @@ void ServoMotorImpl::setPosition(int angle) {
     }
     float coeff = (2500.0 - 500.0) / 180.0;
     int pulse = static_cast<int>(500.0 + angle * coeff + 0.5);  // Calcola e arrotonda
-    Serial.println("ANGLE " + String(angle) + " (pulse: " + String(pulse) + ")");
+    //Serial.println("ANGLE " + String(angle) + " (pulse: " + String(pulse) + ")");
     motor.write(pulse);
 }
 

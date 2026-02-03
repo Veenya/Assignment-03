@@ -29,7 +29,7 @@ void HWPlatform::init() {
 
 // --- getters ---
 
-ServoMotor* HWPlatform::getValveMotor() {
+ServoMotorImpl* HWPlatform::getValveMotor() {
     return pMotor;
 }
 
@@ -76,6 +76,7 @@ void HWPlatform::test() {
 
     // Pot (your position() should already be 0..100)
     int pct = (int)pPotentiometer->position();
+    pMotor->setPosition(pct);
 
     // Serial
     Serial.print("MODE=");
@@ -96,5 +97,5 @@ void HWPlatform::test() {
     pLcd->print(pct);
     pLcd->print("%   ");
 
-    delay(50);
+    
 }

@@ -3,6 +3,7 @@
 
 #include "model/HWPlatform.h"
 #include "model/States.h"
+#include "kernel/Task.h"
 #include "config.h"
 
 /*
@@ -13,11 +14,12 @@
  * - operator inputs: button toggle, potentiometer value
  * - outputs: servo position, LCD text
  */
-class TankTask {
+class TankTask : public Task {
 public:
     explicit TankTask(HWPlatform* hw);
 
     void init();
+    void tick();
 
     /* --------- Mode & connectivity --------- */
     void setMode(SystemMode mode);
