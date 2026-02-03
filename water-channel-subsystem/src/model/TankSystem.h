@@ -2,6 +2,7 @@
 #define __TANK_SYSTEM__
 
 #include "HWPlatform.h"
+#include "UserPanel.h"
 #include "States.h"
 #include "config.h"
 

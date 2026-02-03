@@ -1,5 +1,6 @@
 #include "Arduino.h"
 #include "TankSystem.h"
+#include "UserPanel.h"
 #include "config.h"
 
 // Set false to disable debug prints
@@ -40,10 +41,16 @@ void TankSystem::sync() {
     if (pressed) {
         if (mode == SystemMode::AUTOMATIC) {
             mode = SystemMode::MANUAL;
-            if (DEBUG) Serial.println("[WCS] Mode toggled -> MANUAL");
+            if (DEBUG) {
+                Serial.println("[WCS] Mode toggled -> MANUAL");
+                //displayManual();
+            }
         } else {
             mode = SystemMode::AUTOMATIC;
-            if (DEBUG) Serial.println("[WCS] Mode toggled -> AUTOMATIC");
+            if (DEBUG) {
+                Serial.println("[WCS] Mode toggled -> AUTOMATIC");
+                //displayAutomatic();
+            }
         }
     }
 
@@ -51,6 +58,7 @@ void TankSystem::sync() {
     if (mode == SystemMode::MANUAL && connectivity == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
+        //displayOpeningLevel(potPercent);
     }
 
     // 3) Apply outputs

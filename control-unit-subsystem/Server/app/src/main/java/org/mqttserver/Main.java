@@ -11,8 +11,6 @@ import org.mqttserver.services.mqtt.BrokerImpl;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// TODO: implementare parte di arduino, al momento rompe tutto se la metto, ora e' commentata via
-
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -45,32 +43,30 @@ public class Main {
                 Status st = broker.getSystemController().getStatus();
 
                 if (st == Status.UNCONNECTED) {
-                    //TODO: Safe fallback
-                    //channelControllerManager.sendMessageToArduino(0);
-                    // Debug
-                    System.out.println("### UNCONNECTED ###");
+                    channelControllerManager.sendMessageToArduino(0);
+                    //System.out.println("### UNCONNECTED ###");
                     return null;
                 }
 
                 if (broker.getSystemController().getIsManual() || st == Status.MANUAL) {
                     // Manual: operator command
-                    //channelControllerManager.sendMessageToArduino(broker.getSystemController().getValveValue());
-                    // Debug
-                    System.out.println("### MANUAL ###");
+                    channelControllerManager.sendMessageToArduino(broker.getSystemController().getValveValue());
+                    
+                    //System.out.println("### MANUAL ###");
                     return null;
                 }
 
                 // Automatic: commanded valve (0/50/100)
                 int commanded = broker.getSystemController().getValveValue();
-                //channelControllerManager.sendMessageToArduino(commanded);
-                // Debug
-                System.out.println("### AUTO ###");
+                channelControllerManager.sendMessageToArduino(commanded);
+                
+                //System.out.println("### AUTO ###");
 
                 // Optional readback + validation
-                //String msg = channelControllerManager.receiveDataFromArduino();
-                //if (msg != null && !msg.isBlank()) {
-                    //broker.getSystemController().checkValveValue(msg, broker);
-                //}
+                String msg = channelControllerManager.receiveDataFromArduino();
+                if (msg != null && !msg.isBlank()) {
+                    broker.getSystemController().checkValveValue(msg, broker);
+                }
 
                 return null;
             };
