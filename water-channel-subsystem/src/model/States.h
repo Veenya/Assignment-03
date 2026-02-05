@@ -1,9 +1,14 @@
-/* Maybe remove? */
-
 #ifndef __STATES__
 #define __STATES__
 
-enum class DroneState { REST, WAITING, TAKING_OFF, OPERATING, LANDING, NORMAL };
-enum class HangarState { NORMAL, PRE_ALARM, ALARM };
-enum class DoorState { OPEN, OPENING, CLOSED, CLOSING };
+enum class SystemState { AUTOMATIC, 
+                            MANUAL, 
+                            UNCONNECTED, 
+                            NOT_AVAILABLE, 
+                            AUTO_CLOSED, 
+                            AUTO_OPEN_50, 
+                            AUTO_OPEN_100, 
+                            INVALID_STATUS 
+                        };
+
 #endif

@@ -1,48 +1,57 @@
+#include <Arduino.h>
 #include "config.h"
-#include "kernel/Logger.h"
-#include "kernel/MsgService.h"
 #include "kernel/Scheduler.h"
-#include "model/CommunicationCenter.h"
 #include "model/HWPlatform.h"
-#include "tasks/CommunicationTask.h"
+#include "model/Controller.h"
+#include "tasks/ControllerTask.h"
 #include "tasks/SonarTask.h"
+#include "model/CommunicationCenter.h"
+#include "tasks/CommunicationTask.h"
+// #include "kernel/Logger.h"
 
-
-Scheduler scheduler;
 HWPlatform* pHWPlatform;
-// UserPanel* pUserPanel;
-// Hangar* pHangar;
-// CommunicationCenter* pCommunicationCenter;
+Scheduler scheduler;
+Controller* pController;
+CommunicationCenter* pCommunicationCenter;
 
 void setup() {
-    // MsgService.init();
+    // Logger.log(":::::: Tank Controllering Subsystem ::::::");
+    Serial.begin(ESP_BAUD);
+    delay(200);
+    Serial.println("\n=== ESP32 Setup ===\n");
+    
     scheduler.init(SCHEDULER_PERIOD);
-    // Logger.log(":::::: Drone Hangar ::::::");
     pHWPlatform = new HWPlatform();
     pHWPlatform->init();
+    Serial.println("\n=== HWPlatform OK ===\n");
+    
+    pController = new Controller(pHWPlatform);
+    pController->init();
+    Serial.println("\n=== Controller OK ===\n");
+    
+    pCommunicationCenter = new CommunicationCenter(pController);
+    pCommunicationCenter->init();
+    Serial.println("\n=== CommunicationCenter OK ===\n");
+    
+    Task* pSonarTask = new SonarTask(pController);
+    pSonarTask->init(SONAR_TASK);
+    
+    Task* pControllerTask = new ControllerTask(pController, pCommunicationCenter);
+    pControllerTask->init(CONTROLLER_TASK);
+    
+        Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
+        pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    // pUserPanel = new UserPanel(pHWPlatform);
-    // pUserPanel->init();
+    scheduler.addTask(pSonarTask);
+    scheduler.addTask(pControllerTask);
+    scheduler.addTask(pCommunicationTask);
+    
 
-    // pHangar = new Hangar(pHWPlatform);
-    // pHangar->init();
-
-    // pCommunicationCenter = new CommunicationCenter(pHangar);
-    // pCommunicationCenter->init();
-
-    // Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pHangar);
-    // pCommunicationTask->init(COMMUNICATION_PERIOD);
-
-    // Task* pHangarTask = new HangarTask(pCommunicationCenter, pHangar, pUserPanel);
-    // pHangarTask->init(DOOR_TASK);
-
-    // TODO Task* pSonar = new SonarTask(pHangar, pUserPanel);
-    // pSonar->init(SONAR_TASK);
-
-
-    // TODO scheduler.addTask(pSonarTask);
+    Serial.println("\n=== SETUP OK ===\n");
 }
 
 void loop() {
-    // scheduler.schedule();
+    scheduler.schedule();
+    // Serial.println("\n=== LOOP ===\n");
+    // delay(1000);
 }

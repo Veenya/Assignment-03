@@ -1,9 +1,5 @@
 #include "HWPlatform.h"
 #include <Arduino.h>
-#include "devices/led/Led.h"
-#include "devices/proximity_sensor/Sonar.h"
-
-// void wakeUp() {}
 
 HWPlatform::HWPlatform() {
     pDdd = new Sonar(SONAR_ECHO_PIN, SONAR_TRIG_PIN, MAX_TIME_US);
@@ -15,7 +11,6 @@ HWPlatform::HWPlatform() {
 void HWPlatform::init() {
     Serial.println("HWPlatform inizializzata");
 }
-
 
 Led* HWPlatform::getL1() {
     return this->pL1;
