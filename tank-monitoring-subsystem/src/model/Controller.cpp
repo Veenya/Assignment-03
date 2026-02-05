@@ -32,6 +32,10 @@ void Controller::setWaterState(WaterState state) {
     this->waterState = state;
 }
 
+void Controller::setMQTTState(MQTTState state) {
+    this->mqttState = state;
+}
+
 /* --------- Letture sensori --------- */
 
 float Controller::getDistance() {

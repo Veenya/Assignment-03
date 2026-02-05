@@ -10,7 +10,10 @@ public:
     Controller(HWPlatform* hw);
     void init();
     void sync();
+    
     void setWaterState(WaterState state);
+    void setMQTTState(MQTTState state);
+
     void setWaterDistance(float distance);
     float getWaterDistance();
     float getDistance();

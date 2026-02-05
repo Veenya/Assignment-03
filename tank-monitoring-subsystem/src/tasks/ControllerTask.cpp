@@ -10,6 +10,7 @@ ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCo
 
 void ControllerTask::tick() {
     this->waterState = pController->getWaterState();
+    this->mqttState = pController->getMQTTState();
     manageLeds();
     manageWaterLevel();
 }

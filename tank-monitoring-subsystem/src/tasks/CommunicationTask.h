@@ -13,13 +13,28 @@ public:
 
 private:
     unsigned long lastStateUpdate;
+
+    unsigned long lastStateUpdateWater;
+    unsigned long lastStateUpdateMQTT;
+
     unsigned long now;
+
     void setWaterState(WaterState waterState);
-    long elapsedTimeInState();
+    void setMQTTState(MQTTState mqttState);
+
+    long elapsedTimeInWaterState();
+    long elapsedTimeInMQTTState();
+
     long waterStateTimestamp;
-    bool justEntered;
+    long mqttStateTimestamp;
+    long mqttLastConnected;
+
+    bool justEnteredWater;
+    bool justEnteredMQTT;
+
     WaterState waterState;
     MQTTState mqttState;
+
     CommunicationCenter* pCommunicationCenter;
     Controller* pController;
 };

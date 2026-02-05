@@ -26,24 +26,44 @@ void CommunicationCenter::init() {
         }
     }
 
-    pMQTTpublisher->connect();
-    pMQTTsubscriber->connect();
-    pMQTTsubscriber->begin();
+    // pMQTTpublisher->connect();
+    // pMQTTsubscriber->connect();
+    // pMQTTsubscriber->begin();
 
-    pMQTTpublisher->loop();
-    pMQTTsubscriber->loop();
+    // pMQTTpublisher->loop();
+    // pMQTTsubscriber->loop();
 
     // MQTT Publisher
     Serial.println("Connessione MQTT publisher e subscriber ...");
+    checkMQTTConnection();
+    Serial.println("Communication Center inizializzato");
+}
+
+// checkMQTTConnection
+bool CommunicationCenter::checkMQTTConnection() {
+    if (mqttState == MQTTState::KO) {
+        pMQTTpublisher->connect();
+        pMQTTsubscriber->connect();
+        pMQTTsubscriber->begin();
+
+        pMQTTpublisher->loop();
+        pMQTTsubscriber->loop();
+    }
+
     if (pMQTTpublisher->connected() && pMQTTsubscriber->connected()) {
         mqttState = MQTTState::CONNECTED;
         Serial.println("Publisher e subscriber connessi");
+        return true;
     } else {
         mqttState = MQTTState::KO;
-        Serial.println("Errore nella connessione");
+        if (!pMQTTpublisher->connected()) {
+            Serial.println("Errore Connessione Publisher");
+        } 
+        if (!pMQTTsubscriber->connected()) {
+            Serial.println("Errore Connessione Subscriber");
+        }
+        return false;
     }
-
-    Serial.println("Communication Center inizializzato");
 }
 
 void CommunicationCenter::notifyNewState() {
@@ -59,6 +79,9 @@ void CommunicationCenter::notifyNewState() {
 
     if (pMQTTpublisher->connected()) {
         // const char* message = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
+        //TODO: togliere
+        mqttState = MQTTState::CONNECTED;
+        pController->setMQTTState(MQTTState::CONNECTED);
         Serial.print("Publish su " FREQ_TOPIC " → ");
         Serial.println(message);
 
@@ -66,6 +89,9 @@ void CommunicationCenter::notifyNewState() {
         //c_str() restituisce un puntatore a const char*
         // publisher->publishJSON(...) altrimenti JSON
     } else {
+        mqttState = MQTTState::KO;
+        pController->setMQTTState(MQTTState::KO);
+        
         Serial.println("Publisher non connesso → skip publish");
     }
 }

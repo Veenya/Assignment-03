@@ -13,6 +13,7 @@ public:
     CommunicationCenter(Controller* pController);
     void init();
     void notifyNewState();
+    bool checkMQTTConnection();
 
     WiFiConnection* getWiFiConnection();
     MQTTsubscriber* getMQTTsubscriber();
