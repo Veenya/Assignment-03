@@ -64,10 +64,22 @@ def poll_backend(n):
     try:
         r = requests.get(f"{CUS_BASE}/api/systemdata", timeout=REQ_TIMEOUT)
         r.raise_for_status()
-        data = r.json()  # must be an object: {status,isManual,valveValue,wl}
-        if not data:
-            return None, "No data yet"
-        return data, ""
+        data = r.json()
+
+        # Backend returns either {"...":...} or [{"...":...}, ...]
+        if isinstance(data, dict):
+            return data, ""
+
+        if isinstance(data, list):
+            if not data:
+                return None, "Empty list from backend"
+            item = data[-1]  # latest
+            if not isinstance(item, dict):
+                return None, f"List item is not an object: {type(item).__name__}"
+            return item, ""
+
+        return None, f"Unexpected JSON type: {type(data).__name__}"
+
     except Exception as e:
         return None, f"GET error: {e}"
 
@@ -78,8 +90,7 @@ def poll_backend(n):
     prevent_initial_call=True
 )
 def push_history(latest):
-    # dummy output created dynamically below to avoid clutter
-    if not latest:
+    if not isinstance(latest, dict):
         return ""
 
     try:
@@ -90,8 +101,8 @@ def push_history(latest):
             "timestamp": datetime.datetime.now().strftime("%H:%M:%S"),
         })
     except Exception:
-        # ignore parse errors
         pass
+
     return ""
 
 # create hidden dummy div for history callback
@@ -164,9 +175,9 @@ def update_manual_ui(mode_store, latest):
     if is_manual:
         return False, False, no_update
 
-    # AUTO: disable and sync slider with backend (if available)
-    if latest:
+    if isinstance(latest, dict):
         return True, True, int(latest.get("valveValue", 0))
+
     return True, True, no_update
 
 # ---------- 6) Graphs + status read from deque ----------
@@ -194,13 +205,15 @@ def update_valve(_latest):
         layout=go.Layout(title="Valvola", xaxis={"title": "Ora"}, yaxis={"title": "valveValue"})
     )
 
-@app.callback(Output("status-display", "children"),
-              Input("latest-store", "data"))
+@app.callback(
+    Output("status-display", "children"),
+    Input("latest-store", "data")
+)
 def update_status(latest):
-    if latest:
-        return f'Stato del sistema: {latest.get("status", "?")}'
+    if isinstance(latest, dict):
+        return f"Stato del sistema: {latest.get('status', '?')}"
     return "In attesa di dati..."
 
 if __name__ == "__main__":
     # debug=True can create 2 processes; keep it True for dev, but if issues persist set False
-    app.run(debug=True, port=8057)
+    app.run(debug=True, port=8057, use_reloader=False)
