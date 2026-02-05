@@ -3,9 +3,11 @@
 #define __HW_PLATFORM__
 
 #include "config.h"  // pins
-
+#include "model/States.h"
 #include "devices/led/Led.h"                        // led
 #include "devices/proximity_sensor/Sonar.h"         // proximity sensor
+
+
 
 class HWPlatform {
 public:
@@ -19,7 +21,6 @@ public:
     // LED
     Led* getL1();  // verde network OK
     Led* getL2();  // rosso network KO
-
 
 private:
     // istanze concrete dei device

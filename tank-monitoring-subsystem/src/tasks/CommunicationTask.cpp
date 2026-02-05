@@ -3,33 +3,45 @@
 #include "config.h"
 #include "kernel/Logger.h"
 
-CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Hangar* pHangar)
-    : pCommunicationCenter(pCommunicationCenter), pHangar(pHangar) {
-    setState(DroneState::NORMAL);
+CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController)
+    : pCommunicationCenter(pCommunicationCenter), pController(pController) {
+    setWaterState(WaterState::Low);
+    mqttLastConnected = 0;
 }
 
 void CommunicationTask::tick() {
-    // 1) aggiorna informazioni dal canale seriale / remoto
-    if (pCommunicationCenter) {
-        pCommunicationCenter->sync();  // leggere eventuali messaggi in arrivo dal DRU
-    }
-
-    // 2) invia periodicamente lo stato corrente al DRU
-    lastStateUpdate = 0;
+    // invia periodicamente lo stato corrente
     now = millis();
 
-    if (pCommunicationCenter && (now - lastStateUpdate >= STATE_UPDATE_PERIOD)) {
+    if (pCommunicationCenter && (now - lastStateUpdate >= STATE_UPDATE_PERIOD) && pCommunicationCenter->checkMQTTConnection()) {
         lastStateUpdate = now;
         pCommunicationCenter->notifyNewState();
     }
 }
 
-void CommunicationTask::setState(DroneState state) {
-    this->state = state;
-    stateTimestamp = millis();
-    justEntered = true;
+void CommunicationTask::setWaterState(WaterState waterState) {
+    this->waterState = waterState;
+    waterStateTimestamp = millis();
+    justEnteredWater = true;
 }
 
-long CommunicationTask::elapsedTimeInState() {
-    return millis() - stateTimestamp;
+void CommunicationTask::setMQTTState(MQTTState mqttState) {
+    // se l'ultima conn e' stata 5 se fa, KO
+    // else reset e ok
+    if (mqttState == MQTTState::KO) {
+        // start timer: aspetta 5 sec
+        if (mqttLastConnected > 5000) {
+            // Turn on red LED, turn off other led..?
+            Serial.printf("ERRRO");
+        }
+
+    } else {
+        // Con OK
+        // reset timer
+        mqttLastConnected = now;
+    }
+}
+
+long CommunicationTask::elapsedTimeInWaterState() {
+    return millis() - waterStateTimestamp;
 }

@@ -1,123 +1,111 @@
 #include "CommunicationCenter.h"
 #include <Arduino.h>
-#include "kernel/Logger.h"
-#include "kernel/MsgService.h"
+// #include "kernel/Logger.h"
+// #include "kernel/MsgService.h"
 
-CommunicationCenter::CommunicationCenter(Hangar* pHangar) : pHangar(pHangar) {}
+CommunicationCenter::CommunicationCenter(Controller* pController) : pController(pController) {
+    pWiFiConnection = new WiFiConnection(WIFI_SSID, WIFI_PASSWORD);
+    pMQTTsubscriber = new MQTTsubscriber(DEFAULT_MQTT_SERVER, SUBSCRIBER_CLIENT_ID);
+    pMQTTpublisher = new MQTTpublisher(DEFAULT_MQTT_SERVER, PUBLISHER_CLIENT_ID);
+    MQTTState mqttState = MQTTState::KO;
+    Serial.println("Communication Center istanziato");
+}
 
 void CommunicationCenter::init() {
-    openDoorNotification = false;
-    takeOffNotification = false;
-    landingNotification = false;
-    alarmNotification = false;
-    resetAlarmsNotification = false;
+    Serial.println("\n=== WiFiConnection ===\n");
+    pWiFiConnection->setup_wifi();
+
+    if (false) {  // TODO cancellare finiti i debug
+        Serial.println("Test risoluzione DNS...");
+        IPAddress addr;
+        if (WiFi.hostByName("www.google.com", addr)) {
+            Serial.print("DNS OK per google → IP: ");
+            Serial.println(addr);
+        } else {
+            Serial.println("DNS FALLITO anche per google.com");
+        }
+    }
+
+    // pMQTTpublisher->connect();
+    // pMQTTsubscriber->connect();
+    // pMQTTsubscriber->begin();
+
+    // pMQTTpublisher->loop();
+    // pMQTTsubscriber->loop();
+
+    // MQTT Publisher
+    Serial.println("Connessione MQTT publisher e subscriber ...");
+    checkMQTTConnection();
+    Serial.println("Communication Center inizializzato");
+}
+
+// checkMQTTConnection
+bool CommunicationCenter::checkMQTTConnection() {
+    if (mqttState == MQTTState::KO) {
+        pMQTTpublisher->connect();
+        pMQTTsubscriber->connect();
+        pMQTTsubscriber->begin();
+
+        pMQTTpublisher->loop();
+        pMQTTsubscriber->loop();
+    }
+
+    if (pMQTTpublisher->connected() && pMQTTsubscriber->connected()) {
+        mqttState = MQTTState::CONNECTED;
+        Serial.println("Publisher e subscriber connessi");
+        return true;
+    } else {
+        mqttState = MQTTState::KO;
+        if (!pMQTTpublisher->connected()) {
+            Serial.println("Errore Connessione Publisher");
+        } 
+        if (!pMQTTsubscriber->connected()) {
+            Serial.println("Errore Connessione Subscriber");
+        }
+        return false;
+    }
 }
 
 void CommunicationCenter::notifyNewState() {
-    this->hangarState = pHangar->getHangarState();
-    String hangarStateStr;
-    if (hangarState == HangarState::ALARM) {
-        hangarStateStr = "2";
-    } else if (hangarState == HangarState::PRE_ALARM) {
-        hangarStateStr = "1";
-    } else {  // NORMAL
-        hangarStateStr = "0";
+    String message;
+    this->waterState = pController->getWaterState();
+    if (waterState == WaterState::Low) {
+        message = "Low";
+    } else if (waterState == WaterState::Medium) {
+        message = "Mid";
+    } else if (waterState == WaterState::High) {
+        message = "High";
     }
 
-    droneState = pHangar->getDroneState();
-    String droneStateStr = "-1";
-    if (droneState == DroneState::REST) {
-        droneStateStr = "0";
-    } else if (droneState == DroneState::OPERATING) {
-        droneStateStr = "1";
+    if (pMQTTpublisher->connected()) {
+        // const char* message = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
+        //TODO: togliere
+        mqttState = MQTTState::CONNECTED;
+        pController->setMQTTState(MQTTState::CONNECTED);
+        Serial.print("Publish su " FREQ_TOPIC " → ");
+        Serial.println(message);
+
+        pMQTTpublisher->publish(FREQ_TOPIC, message.c_str());  // metodo semplice
+        //c_str() restituisce un puntatore a const char*
+        // publisher->publishJSON(...) altrimenti JSON
     } else {
-        droneStateStr = "2";
-    }
-    droneAbove = pHangar->isDroneAbove();
-    String droneAboveStr = "-1";
-    if (droneAbove) {
-        droneAboveStr = "1";
-    } else {
-        droneAboveStr = "0";
-    }
-
-    droneDistance = pHangar->getDistance();  // solitamente tra 0 e 0.2
-    // int droneDistance = 10;
-    currentTemp = pHangar->getTemperature();
-
-  // stato del hangar, stato drone, distanza drone, temperatura, drone above
-  MsgService.sendMsg(String("STATE,") + 
-                      hangarStateStr + "," + 
-                      droneStateStr + "," + 
-                      String(droneDistance).substring(0,5) + "," +  
-                      String(currentTemp).substring(0,5) + "," +
-                      String(droneAboveStr));  
-}
-
-void CommunicationCenter::sync() {
-    if (MsgService.isMsgAvailable()) {
-        Msg* msg = MsgService.receiveMsg();
-        if (msg != NULL) {
-            String msgContent = msg->getContent();
-            Logger.log("Received msg: " + msgContent);
-            if (msgContent == "to") {  // Take off
-                openDoorNotification = true;
-                takeOffNotification = true;
-            } else if (msgContent == "la") {  // Landing
-                openDoorNotification = true;
-                landingNotification = true;
-            } else if (msgContent == "ao") {  // Alarm on
-                pHangar->raiseAlarm();
-            } else if (msgContent == "af") {  // Alarm off
-                pHangar->resetAlarm();
-            }
-            delete msg;
-        }
-    }
-    pHangar->getResetButton()->sync();
-    // Logger.log("Reset Alarm Pressed" + String(pHangar->getResetButton()->isPressed()));
-    if (pHangar->getResetButton()->isPressed()) {
-        pHangar->resetAlarm();
+        mqttState = MQTTState::KO;
+        pController->setMQTTState(MQTTState::KO);
+        
+        Serial.println("Publisher non connesso → skip publish");
     }
 }
 
-//* OPEN DOOR
-bool CommunicationCenter::checkAndResetOpenDoorRequest() {
-    bool request = this->openDoorNotification;
-    openDoorNotification = false;
-    return request;
-}
+WiFiConnection* CommunicationCenter::getWiFiConnection() {
+    return this->pWiFiConnection;
+};
+MQTTsubscriber* CommunicationCenter::getMQTTsubscriber() {
+    return this->pMQTTsubscriber;
+};
+MQTTpublisher* CommunicationCenter::getMQTTpublisher() {
+    return this->pMQTTpublisher;
+};
 
-//* TAKEOFF
-bool CommunicationCenter::checkAndResetTakeOffRequest() {
-    bool request = this->takeOffNotification;
-    takeOffNotification = false;
-    return request;
-}
-bool CommunicationCenter::checkTakeOffRequest() {
-    return this->takeOffNotification;
-}
-
-//* LANDING
-bool CommunicationCenter::checkAndResetLandingRequest() {
-    bool request = this->landingNotification;
-    landingNotification = false;
-    return request;
-}
-
-bool CommunicationCenter::checkLandingRequest() {
-    return this->landingNotification;
-}
-
-//* ALLARM
-bool CommunicationCenter::checkAndResetAlarmRequest() {
-    bool request = this->resetAlarmsNotification;
-    resetAlarmsNotification = false;
-    return request;
-}
-
-bool CommunicationCenter::notifyAlarm() {
-    bool request = this->alarmNotification;
-    alarmNotification = false;
-    return request;
+MQTTState CommunicationCenter::getMQTTState() {
+    return this->mqttState;
 }

@@ -1,37 +1,37 @@
-#ifndef __MSGSERVICE__
-#define __MSGSERVICE__
+// #ifndef __MSGSERVICE__
+// #define __MSGSERVICE__
 
 
-class Msg {
-    String content;
+// class Msg {
+//     String content;
 
-public:
-    Msg(String content) { this->content = content; }
+// public:
+//     Msg(String content) { this->content = content; }
 
-    String getContent() { return content; }
-};
+//     String getContent() { return content; }
+// };
 
-class Pattern {
-public:
-    virtual boolean match(const Msg& m) = 0;
-};
+// class Pattern {
+// public:
+//     virtual boolean match(const Msg& m) = 0;
+// };
 
-class MsgServiceClass {
-public:
-    Msg* currentMsg;
-    bool msgAvailable;
+// class MsgServiceClass {
+// public:
+//     Msg* currentMsg;
+//     bool msgAvailable;
 
-    void init();
+//     void init();
 
-    bool isMsgAvailable();
-    Msg* receiveMsg();
+//     bool isMsgAvailable();
+//     Msg* receiveMsg();
 
-    bool isMsgAvailable(Pattern& pattern);
-    Msg* receiveMsg(Pattern& pattern);
+//     bool isMsgAvailable(Pattern& pattern);
+//     Msg* receiveMsg(Pattern& pattern);
 
-    void sendMsg(const String& msg);
-};
+//     void sendMsg(const String& msg);
+// };
 
-extern MsgServiceClass MsgService;
+// extern MsgServiceClass MsgService;
 
-#endif
+// #endif

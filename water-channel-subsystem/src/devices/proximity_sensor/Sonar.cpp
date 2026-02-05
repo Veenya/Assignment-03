@@ -2,11 +2,18 @@
 #include "Arduino.h"
 
 Sonar::Sonar(int echoP, int trigP, long maxTime)
-    : echoPin(echoP), trigPin(trigP), timeOut(maxTime) {
+    : echoPin(echoP), trigPin(trigP) {
     pinMode(trigPin, OUTPUT);
     pinMode(echoPin, INPUT);
+    temperature = 20;  // default value
 }
 
+void Sonar::setTemperature(float temp) {
+    temperature = temp;
+}
+float Sonar::getSoundSpeed() {
+    return 331.5 + 0.6 * temperature;
+}
 
 float Sonar::getDistance() {
     digitalWrite(trigPin, LOW);
@@ -15,12 +22,12 @@ float Sonar::getDistance() {
     delayMicroseconds(5);
     digitalWrite(trigPin, LOW);
 
-    float duration = pulseIn(echoPin, HIGH, timeOut);
-    if (duration == 0) {
-        Serial.println("Chiamata Sonar::getDistance NO SONAR");
+    float tUS = pulseIn(echoPin, HIGH);
+    if (tUS == 0) {
         return SONAR_NO_OBJ_DETECTED;
     } else {
-        distance = duration / 58.2;
-        return distance;
+        float t = tUS / 1000.0 / 1000.0 / 2;
+        float d = t * getSoundSpeed();
+        return d;
     }
 }
