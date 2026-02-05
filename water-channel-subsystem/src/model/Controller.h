@@ -29,8 +29,8 @@ public:
     void sync(); // refresh inputs/outputs (read button/pot, update lcd/servo if needed)
 
     /* --------- Mode & connectivity --------- */
-    void setMode(SystemMode mode);
-    SystemMode getMode();
+    void setMode(SystemState mode);
+    SystemState getMode();
     void toggleMode();
 
     void setConnectivity(ConnectivityState state);
@@ -68,11 +68,16 @@ public:
     void setPotentiometerPosition(float potentiometerPosition); 
     HWPlatform* getHWPlatform();
 
+    SystemState Controller::getSystemState();
+    void Controller::setSystemState(SystemState systemState);
+    ConnectivityState Controller::getConnectivityState();
+    void Controller::setConnectivityState(ConnectivityState connectivityState);
+
 // private:
     HWPlatform* pHW;
     // state
-    SystemMode mode;                 // AUTOMATIC / MANUAL
-    ConnectivityState connectivity;  // CONNECTED / UNCONNECTED
+    SystemState systemState; 
+    ConnectivityState connectivityState;
     float waterLevel;                // last WL known (optional, for LCD)
     int valveOpening;                // 0..100 commanded/current
 

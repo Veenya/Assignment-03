@@ -5,24 +5,29 @@
 // Set false to disable debug prints
 static bool DEBUG = true;
 
-ControllerTask::ControllerTask(HWPlatform* hw)
-    : pHW(hw),
-      mode(SystemMode::AUTOMATIC),
-      connectivity(ConnectivityState::UNCONNECTED),
+ControllerTask::ControllerTask(Controller* pController)
+    : systemState(SystemState::AUTOMATIC),
+      connectivityState(ConnectivityState::UNCONNECTED),
       waterLevel(0.0f),
       valveOpening(0),
-      lastButtonState(false)
+      lastButtonState(false),
+      pController(pController)
       {}
 
 
 void ControllerTask::tick() {
+    this->systemState = pController->getSystemState();
+    this->connectivityState = pController->getConnectivityState();
+    // TODO fare i manage() necessari
+
+
     // 1) Mode toggle (debounced, toggle once per press) -> like HWPlatform::test()
     if (isModeButtonPressed()) {
         toggleMode();
     }
 
     // 2) Manual pot -> valve opening (keep your rule: only if CONNECTED)
-    if (mode == SystemMode::MANUAL && connectivity == ConnectivityState::CONNECTED) {
+    if (systemState == SystemState::MANUAL && connectivityState == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
     }
@@ -41,7 +46,7 @@ void ControllerTask::tick() {
         }
 
         Serial.print("MODE=");
-        Serial.print(mode == SystemMode::AUTOMATIC ? "AUTO" : "MANUAL");
+        Serial.print(systemState == SystemState::AUTOMATIC ? "AUTO" : "MANUAL");
         Serial.print("  POT=");
         Serial.print(potPct);
         Serial.print("%  VALVE=");
@@ -51,7 +56,7 @@ void ControllerTask::tick() {
 }
 
 void ControllerTask::test() {
-    //mode;              // 0=AUTO, 1=MANUAL (persists)
+    //systemState;              // 0=AUTO, 1=MANUAL (persists)
     static int lastReading = HIGH;    // because INPUT_PULLUP: released=HIGH
     static unsigned long lastDebounceTime = 0;
     const unsigned long debounceMs = 40;
@@ -88,44 +93,44 @@ void ControllerTask::test() {
     refreshOutputs();
 }
 
-/* --------- Mode & connectivity --------- */
+/* --------- Mode & connectivityState --------- */
 
-void ControllerTask::setMode(SystemMode m) {
-    mode = m;
+void ControllerTask::setMode(SystemState m) {
+    systemState = m;
 }
 
-SystemMode ControllerTask::getMode() const {
-    return mode;
+SystemState ControllerTask::getMode() const {
+    return systemState;
 }
 
 void ControllerTask::toggleMode() {
-    mode = (mode == SystemMode::AUTOMATIC) ? SystemMode::MANUAL : SystemMode::AUTOMATIC;
+    systemState = (systemState == SystemState::AUTOMATIC) ? SystemState::MANUAL : SystemState::AUTOMATIC;
 
     if (DEBUG) {
         Serial.print("[WCS] Mode toggled -> ");
-        Serial.println(mode == SystemMode::MANUAL ? "MANUAL" : "AUTOMATIC");
+        Serial.println(systemState == SystemState::MANUAL ? "MANUAL" : "AUTOMATIC");
     }
 }
 
 void ControllerTask::setConnectivity(ConnectivityState s) {
-    connectivity = s;
+    connectivityState = s;
 
     // Safety: if UNCONNECTED, close valve
-    if (connectivity == ConnectivityState::UNCONNECTED) {
+    if (connectivityState == ConnectivityState::UNCONNECTED) {
         setValveOpening(0);
     }
 }
 
 ConnectivityState ControllerTask::getConnectivity() const {
-    return connectivity;
+    return connectivityState;
 }
 
 bool ControllerTask::isManual() const {
-    return mode == SystemMode::MANUAL;
+    return systemState == SystemState::MANUAL;
 }
 
 bool ControllerTask::isUnconnected() const {
-    return connectivity == ConnectivityState::UNCONNECTED;
+    return connectivityState == ConnectivityState::UNCONNECTED;
 }
 
 /* --------- Water level (optional for LCD) --------- */
@@ -153,7 +158,7 @@ void ControllerTask::applyValveToServo() {
     if (!servo) return;
 
     // Safety: if UNCONNECTED, force closed
-    int effectivePercent = (connectivity == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
+    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
     int angle = percentToServoAngle(effectivePercent);
     servo->setPosition(angle);
 }
@@ -202,10 +207,10 @@ void ControllerTask::updateDisplay() {
     lcd->print(getValveOpening());
     lcd->print("% ");
 
-    if (connectivity == ConnectivityState::UNCONNECTED) {
+    if (connectivityState == ConnectivityState::UNCONNECTED) {
         lcd->print("UNCONN ");
     } else {
-        lcd->print(mode == SystemMode::MANUAL ? "MANUAL " : "AUTO   ");
+        lcd->print(systemState == SystemState::MANUAL ? "MANUAL " : "AUTO   ");
     }
 
     lcd->setCursor(0, 1);

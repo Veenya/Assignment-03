@@ -9,8 +9,8 @@ static bool DEBUG = true;
 
 Controller::Controller(HWPlatform* hw)
     : pHW(hw),
-      mode(SystemMode::AUTOMATIC),
-      connectivity(ConnectivityState::UNCONNECTED),
+      systemState(SystemState::AUTOMATIC),
+      connectivityState(ConnectivityState::UNCONNECTED),
       waterLevel(0.0f),
       valveOpening(0),
       lastButtonState(false) {}
@@ -27,21 +27,21 @@ void Controller::init() {
 
 void Controller::sync() {
     // Typical loop:
-    // - read button edge -> toggle mode locally (operator panel)
+    // - read button edge -> toggle systemState locally (operator panel)
     // - if MANUAL -> read pot -> set valveOpening
     // - apply servo + update lcd
 
     // 1) Button toggle (edge detect)
     bool pressed = isModeButtonPressed();
     if (pressed) {
-        if (mode == SystemMode::AUTOMATIC) {
-            mode = SystemMode::MANUAL;
+        if (systemState == SystemState::AUTOMATIC) {
+            systemState = SystemState::MANUAL;
             if (DEBUG) {
                 Serial.println("[WCS] Mode toggled -> MANUAL");
                 // displayManual();
             }
         } else {
-            mode = SystemMode::AUTOMATIC;
+            systemState = SystemState::AUTOMATIC;
             if (DEBUG) {
                 Serial.println("[WCS] Mode toggled -> AUTOMATIC");
                 // displayAutomatic();
@@ -50,7 +50,7 @@ void Controller::sync() {
     }
 
     // 2) If manual and connected, valve opening follows potentiometer
-    if (mode == SystemMode::MANUAL && connectivity == ConnectivityState::CONNECTED) {
+    if (systemState == SystemState::MANUAL && connectivityState == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
         // displayOpeningLevel(potPercent);
@@ -61,24 +61,24 @@ void Controller::sync() {
     updateDisplay();
 }
 
-/* --------- Mode & connectivity --------- */
+/* --------- Mode & connectivityState --------- */
 
-void Controller::setMode(SystemMode m) {
-    mode = m;
+void Controller::setMode(SystemState m) {
+    systemState = m;
 }
 
-SystemMode Controller::getMode() {
-    return mode;
+SystemState Controller::getMode() {
+    return systemState;
 }
 
 void Controller::toggleMode() {
-    if (mode == SystemMode::AUTOMATIC) {
-        mode = SystemMode::MANUAL;
+    if (systemState == SystemState::AUTOMATIC) {
+        systemState = SystemState::MANUAL;
         if (DEBUG) {
             Serial.println("[WCS] Mode toggled -> MANUAL");
         }
     } else {
-        mode = SystemMode::AUTOMATIC;
+        systemState = SystemState::AUTOMATIC;
         if (DEBUG) {
             Serial.println("[WCS] Mode toggled -> AUTOMATIC");
         }
@@ -86,24 +86,24 @@ void Controller::toggleMode() {
 }
 
 void Controller::setConnectivity(ConnectivityState s) {
-    connectivity = s;
+    connectivityState = s;
 
     // Safety behavior: if UNCONNECTED, close valve
-    if (connectivity == ConnectivityState::UNCONNECTED) {
+    if (connectivityState == ConnectivityState::UNCONNECTED) {
         setValveOpening(0);
     }
 }
 
 ConnectivityState Controller::getConnectivity() {
-    return connectivity;
+    return connectivityState;
 }
 
 bool Controller::isManual() {
-    return mode == SystemMode::MANUAL;
+    return systemState == SystemState::MANUAL;
 }
 
 bool Controller::isUnconnected() {
-    return connectivity == ConnectivityState::UNCONNECTED;
+    return connectivityState == ConnectivityState::UNCONNECTED;
 }
 
 /* --------- Water level (optional for LCD) --------- */
@@ -130,6 +130,21 @@ HWPlatform* Controller::getHWPlatform() {
     return pHW;
 }
 
+
+SystemState Controller::getSystemState() {
+    return this->systemState;
+}
+void Controller::setSystemState(SystemState systemState) {
+    this->systemState = systemState;
+}
+
+ConnectivityState Controller::getConnectivityState(){
+    return this->connectivityState;
+}
+void Controller::setConnectivityState(ConnectivityState connectivityState) {
+    this->connectivityState = connectivityState;
+}
+
 void Controller::setPotentiometerPosition(float potentiometerPosition) {
     this->potentiometerPosition = potentiometerPosition;
 }; 
@@ -144,7 +159,7 @@ void Controller::applyValveToServo() {
     }
 
     // If UNCONNECTED, force closed (spec safety)
-    int effectivePercent = (connectivity == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
+    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
     int angle = percentToServoAngle(effectivePercent);
     servo->setPosition(angle);
 }
@@ -188,16 +203,16 @@ void Controller::updateDisplay() {
     // If you prefer, you can clear, but it may flicker.
     lcd->setCursor(0, 0);
 
-    // Row 0: valve + mode
+    // Row 0: valve + systemState
     // Example: "V: 50% AUTO"
     lcd->print("V:");
     lcd->print(getValveOpening());
     lcd->print("% ");
 
-    if (connectivity == ConnectivityState::UNCONNECTED) {
+    if (connectivityState == ConnectivityState::UNCONNECTED) {
         lcd->print("UNCONN");
     } else {
-        lcd->print(mode == SystemMode::MANUAL ? "MANUAL" : "AUTO  ");
+        lcd->print(systemState == SystemState::MANUAL ? "MANUAL" : "AUTO  ");
     }
 
     // Row 1: WL (optional)

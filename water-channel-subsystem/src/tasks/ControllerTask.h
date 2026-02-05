@@ -16,13 +16,13 @@
  */
 class ControllerTask : public Task {
 public:
-    explicit ControllerTask(HWPlatform* hw);
+    explicit ControllerTask(Controller* pController);
     void tick();
     void test();
 
     /* --------- Mode & connectivity --------- */
-    void setMode(SystemMode mode);
-    SystemMode getMode() const;
+    void setMode(SystemState mode);
+    SystemState getMode() const;
 
     void toggleMode();
 
@@ -52,10 +52,11 @@ public:
 
 private:
     HWPlatform* pHW;
+    Controller* pController;
 
     // state
-    SystemMode mode; 
-    ConnectivityState connectivity;
+    SystemState systemState; 
+    ConnectivityState connectivityState;
     float waterLevel;
     int valveOpening;
 

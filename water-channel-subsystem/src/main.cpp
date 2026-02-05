@@ -38,7 +38,7 @@ void setup() {
     pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    pControllerTask = new ControllerTask(pHWPlatform); 
+    pControllerTask = new ControllerTask(pController); 
     pControllerTask->init(TANK_PERIOD);
 
     pPotentiometerTask = new PotentiometerTask(pController);

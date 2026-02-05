@@ -14,10 +14,10 @@ public:
 private:
     unsigned long lastStateUpdate;
     unsigned long now;
-    void setState(SystemMode state);
+    void setState(SystemState state);
     long elapsedTimeInState();
 
-    SystemMode state;
+    SystemState state;
     long stateTimestamp;
     bool justEntered;
 

@@ -1,7 +1,7 @@
 #ifndef __STATES__
 #define __STATES__
 
-enum class SystemMode {
+enum class SystemState {
     AUTOMATIC,
     MANUAL
 };

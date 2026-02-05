@@ -28,7 +28,7 @@ void CommunicationCenter::init() {
 
 void CommunicationCenter::notifyNewState() {
     // Send compact state snapshot to CUS
-    String modeStr = (pSys->getMode() == SystemMode::MANUAL) ? "MANUAL" : "AUTO";
+    String modeStr = (pSys->getMode() == SystemState::MANUAL) ? "MANUAL" : "AUTO";
     String connStr = (pSys->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
 
     int valve = pSys->getValveOpening();
@@ -66,10 +66,10 @@ void CommunicationCenter::sync() {
                 String m = content.substring(5);
                 m.trim();
                 if (m == "MANUAL") {
-                    pSys->setMode(SystemMode::MANUAL);
+                    pSys->setMode(SystemState::MANUAL);
                     newModeCmd = true;
                 } else if (m == "AUTO") {
-                    pSys->setMode(SystemMode::AUTOMATIC);
+                    pSys->setMode(SystemState::AUTOMATIC);
                     newModeCmd = true;
                 }
             } else if (content.startsWith("VALVE,")) {

@@ -20,7 +20,7 @@ public:
     void turnOffDisplay();
 
     void displayOpeningLevel(float val);
-    //void displaySystemMode();
+    //void displaySystemState();
     void displayAutomatic();
     void displayManual();
     void displayUnconnected();

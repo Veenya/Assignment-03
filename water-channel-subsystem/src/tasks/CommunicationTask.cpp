@@ -4,7 +4,7 @@
 
 CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController)
     : pCommunicationCenter(pCommunicationCenter), pController(pController) {
-    setState(SystemMode::AUTOMATIC);
+    setState(SystemState::AUTOMATIC);
 }
 
 void CommunicationTask::tick() {
@@ -23,7 +23,7 @@ void CommunicationTask::tick() {
     }
 }
 
-void CommunicationTask::setState(SystemMode state) {
+void CommunicationTask::setState(SystemState state) {
     this->state = state;
     stateTimestamp = millis();
     justEntered = true;
