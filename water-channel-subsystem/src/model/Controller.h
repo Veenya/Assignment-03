@@ -21,9 +21,9 @@
  * - outputs: servo position, LCD text
  */
 
-class TankSystem {
+class Controller {
 public:
-    explicit TankSystem(HWPlatform* hw);
+    explicit Controller(HWPlatform* hw);
 
     void init();
     void sync(); // refresh inputs/outputs (read button/pot, update lcd/servo if needed)
@@ -65,8 +65,11 @@ public:
     // LCD shows: valve%, mode (AUTO/MANUAL) or UNCONNECTED
     void updateDisplay();
 
-    HWPlatform* pHW;
+    void setPotentiometerPosition(float potentiometerPosition); 
+    HWPlatform* getHWPlatform();
 
+// private:
+    HWPlatform* pHW;
     // state
     SystemMode mode;                 // AUTOMATIC / MANUAL
     ConnectivityState connectivity;  // CONNECTED / UNCONNECTED
@@ -79,6 +82,7 @@ public:
     // helpers
     int clampPercent(int v);
     int percentToServoAngle(int percent);
+    float potentiometerPosition;
 };
 
 #endif

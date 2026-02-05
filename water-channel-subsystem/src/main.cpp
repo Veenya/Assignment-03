@@ -6,14 +6,18 @@
 #include "model/HWPlatform.h"
 #include "model/UserPanel.h"
 #include "tasks/CommunicationTask.h"
-#include "tasks/TankTask.h"
+#include "tasks/PotentiometerTask.h"
+#include "tasks/ControllerTask.h"
 
 Scheduler scheduler;
 HWPlatform* pHWPlatform;
 UserPanel* pUserPanel;
-TankSystem *pTankSystem;
+Controller *pController;
 CommunicationCenter* pCommunicationCenter;
-TankTask* pTankTask;
+ControllerTask* pControllerTask;
+Task* pCommunicationTask;
+Task* pControllerTask;
+PotentiometerTask* pPotentiometerTask;
 
 void setup() {
     MsgService.init();
@@ -25,23 +29,26 @@ void setup() {
     pUserPanel = new UserPanel(pHWPlatform);
     pUserPanel->init();
 
-    pTankSystem = new TankSystem(pHWPlatform);
-    pTankSystem->init();
+    pController = new Controller(pHWPlatform);
+    pController->init();
 
-    pCommunicationCenter = new CommunicationCenter(pTankSystem);
+    pCommunicationCenter = new CommunicationCenter(pController);
     pCommunicationCenter->init();
 
-    Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pTankSystem);
+    pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    Task* pTankTask = new TankTask(pHWPlatform); 
-    pTankTask->init(TANK_PERIOD);
+    pControllerTask = new ControllerTask(pHWPlatform); 
+    pControllerTask->init(TANK_PERIOD);
+
+    pPotentiometerTask = new PotentiometerTask(pController);
+    pControllerTask->init(POTENTIOMETER_PERIOD);
 
     scheduler.addTask(pCommunicationTask);
-    scheduler.addTask(pTankTask);
+    scheduler.addTask(pControllerTask);
 }
 
 void loop() {
     //scheduler.schedule();
-    pTankTask->test();
+    // pControllerTask->test();
 }

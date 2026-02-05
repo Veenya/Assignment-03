@@ -2,8 +2,8 @@
 #include <Arduino.h>
 #include "config.h"
 
-CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, TankSystem* pTankSystem)
-    : pCommunicationCenter(pCommunicationCenter), pTankSystem(pTankSystem) {
+CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController)
+    : pCommunicationCenter(pCommunicationCenter), pController(pController) {
     setState(SystemMode::AUTOMATIC);
 }
 

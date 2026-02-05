@@ -14,11 +14,9 @@
  * - operator inputs: button toggle, potentiometer value
  * - outputs: servo position, LCD text
  */
-class TankTask : public Task {
+class ControllerTask : public Task {
 public:
-    explicit TankTask(HWPlatform* hw);
-
-    void init();
+    explicit ControllerTask(HWPlatform* hw);
     void tick();
     void test();
 

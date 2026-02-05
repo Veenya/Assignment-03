@@ -3,12 +3,12 @@
 
 #include "kernel/Task.h"
 #include "model/CommunicationCenter.h"
-#include "model/TankSystem.h"
+#include "model/Controller.h"
 #include "model/States.h"
 
 class CommunicationTask : public Task {
 public:
-    CommunicationTask(CommunicationCenter* pCommunicationCenter, TankSystem* pTankSystem);
+    CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController);
     void tick(); // override
 
 private:
@@ -22,7 +22,7 @@ private:
     bool justEntered;
 
     CommunicationCenter* pCommunicationCenter;
-    TankSystem* pTankSystem;
+    Controller* pController;
 };
 
 #endif

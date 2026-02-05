@@ -1,13 +1,13 @@
 
+#include "Controller.h"
 #include "Arduino.h"
-#include "TankSystem.h"
 #include "UserPanel.h"
 #include "config.h"
 
 // Set false to disable debug prints
 static bool DEBUG = true;
 
-TankSystem::TankSystem(HWPlatform* hw)
+Controller::Controller(HWPlatform* hw)
     : pHW(hw),
       mode(SystemMode::AUTOMATIC),
       connectivity(ConnectivityState::UNCONNECTED),
@@ -15,23 +15,17 @@ TankSystem::TankSystem(HWPlatform* hw)
       valveOpening(0),
       lastButtonState(false) {}
 
-void TankSystem::init() {
-    // Starting mode when booting is AUTOMATIC (spec)
-    mode = SystemMode::AUTOMATIC;
-    connectivity = ConnectivityState::UNCONNECTED; // until CUS sends something / heartbeat
-    waterLevel = 0.0f;
-    valveOpening = 0;
-
+void Controller::init() {
     // Put valve in safe state (closed)
     applyValveToServo();
     updateDisplay();
 
     if (DEBUG) {
-        Serial.println("[WCS] TankSystem initialized (AUTO, UNCONNECTED, valve=0%)");
+        Serial.println("[WCS] Controller initialized (AUTO, UNCONNECTED, valve=0%)");
     }
 }
 
-void TankSystem::sync() {
+void Controller::sync() {
     // Typical loop:
     // - read button edge -> toggle mode locally (operator panel)
     // - if MANUAL -> read pot -> set valveOpening
@@ -44,13 +38,13 @@ void TankSystem::sync() {
             mode = SystemMode::MANUAL;
             if (DEBUG) {
                 Serial.println("[WCS] Mode toggled -> MANUAL");
-                //displayManual();
+                // displayManual();
             }
         } else {
             mode = SystemMode::AUTOMATIC;
             if (DEBUG) {
                 Serial.println("[WCS] Mode toggled -> AUTOMATIC");
-                //displayAutomatic();
+                // displayAutomatic();
             }
         }
     }
@@ -59,7 +53,7 @@ void TankSystem::sync() {
     if (mode == SystemMode::MANUAL && connectivity == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
-        //displayOpeningLevel(potPercent);
+        // displayOpeningLevel(potPercent);
     }
 
     // 3) Apply outputs
@@ -69,15 +63,15 @@ void TankSystem::sync() {
 
 /* --------- Mode & connectivity --------- */
 
-void TankSystem::setMode(SystemMode m) {
+void Controller::setMode(SystemMode m) {
     mode = m;
 }
 
-SystemMode TankSystem::getMode() {
+SystemMode Controller::getMode() {
     return mode;
 }
 
-void TankSystem::toggleMode() {
+void Controller::toggleMode() {
     if (mode == SystemMode::AUTOMATIC) {
         mode = SystemMode::MANUAL;
         if (DEBUG) {
@@ -91,8 +85,7 @@ void TankSystem::toggleMode() {
     }
 }
 
-
-void TankSystem::setConnectivity(ConnectivityState s) {
+void Controller::setConnectivity(ConnectivityState s) {
     connectivity = s;
 
     // Safety behavior: if UNCONNECTED, close valve
@@ -101,42 +94,52 @@ void TankSystem::setConnectivity(ConnectivityState s) {
     }
 }
 
-ConnectivityState TankSystem::getConnectivity() {
+ConnectivityState Controller::getConnectivity() {
     return connectivity;
 }
 
-bool TankSystem::isManual() {
+bool Controller::isManual() {
     return mode == SystemMode::MANUAL;
 }
 
-bool TankSystem::isUnconnected() {
+bool Controller::isUnconnected() {
     return connectivity == ConnectivityState::UNCONNECTED;
 }
 
 /* --------- Water level (optional for LCD) --------- */
 
-void TankSystem::setWaterLevel(float wl) {
+void Controller::setWaterLevel(float wl) {
     waterLevel = wl;
 }
 
-float TankSystem::getWaterLevel() {
+float Controller::getWaterLevel() {
     return waterLevel;
 }
 
 /* --------- Valve control --------- */
 
-void TankSystem::setValveOpening(int percent) {
+void Controller::setValveOpening(int percent) {
     valveOpening = clampPercent(percent);
 }
 
-int TankSystem::getValveOpening() {
+int Controller::getValveOpening() {
     return valveOpening;
 }
 
-void TankSystem::applyValveToServo() {
-    auto servo = pHW->getValveMotor(); // <-- rename to your HWPlatform method
+HWPlatform* Controller::getHWPlatform() {
+    return pHW;
+}
+
+void Controller::setPotentiometerPosition(float potentiometerPosition) {
+    this->potentiometerPosition = potentiometerPosition;
+}; 
+
+
+void Controller::applyValveToServo() {
+    auto servo = pHW->getMotor();
     if (!servo) {
-        if (DEBUG) Serial.println("[WCS] No valve servo/motor");
+        if (DEBUG)
+            Serial.println("[WCS] No valve servo/motor");
         return;
     }
 
@@ -148,9 +151,10 @@ void TankSystem::applyValveToServo() {
 
 /* --------- Operator inputs --------- */
 
-bool TankSystem::isModeButtonPressed() {
+bool Controller::isModeButtonPressed() {
     auto btn = pHW->getToggleButton();
-    if (!btn) return false;
+    if (!btn)
+        return false;
 
     btn->sync();
     bool current = btn->isPressed();
@@ -161,22 +165,24 @@ bool TankSystem::isModeButtonPressed() {
     return pressedEdge;
 }
 
-int TankSystem::readManualValveFromPot() {
-    auto pot = pHW->getPotentiometer(); // <-- rename to your HWPlatform method
-    if (!pot) return 0;
+int Controller::readManualValveFromPot() {
+    auto pot = pHW->getPotentiometer();  // <-- rename to your HWPlatform method
+    if (!pot)
+        return 0;
 
     pot->sync();
     // assume pot returns 0..1023; map to 0..100
-    int raw = pot->position();
+    int raw = pot->getPosition();
     int percent = map(raw, 0, 1023, 0, 100);
     return clampPercent(percent);
 }
 
 /* --------- Outputs: LCD --------- */
 
-void TankSystem::updateDisplay() {
-    auto lcd = pHW->getLcd(); // <-- rename to your HWPlatform method
-    if (!lcd) return;
+void Controller::updateDisplay() {
+    auto lcd = pHW->getLcd();  // <-- rename to your HWPlatform method
+    if (!lcd)
+        return;
 
     // Avoid heavy flicker: don’t clear constantly if you update frequently.
     // If you prefer, you can clear, but it may flicker.
@@ -198,18 +204,20 @@ void TankSystem::updateDisplay() {
     lcd->setCursor(0, 1);
     lcd->print("WL:");
     lcd->print(waterLevel, 1);
-    lcd->print("       "); // padding to overwrite old chars
+    lcd->print("       ");  // padding to overwrite old chars
 }
 
 /* --------- helpers --------- */
 
-int TankSystem::clampPercent(int v) {
-    if (v < 0) return 0;
-    if (v > 100) return 100;
+int Controller::clampPercent(int v) {
+    if (v < 0)
+        return 0;
+    if (v > 100)
+        return 100;
     return v;
 }
 
-int TankSystem::percentToServoAngle(int percent) {
+int Controller::percentToServoAngle(int percent) {
     // Spec: 0% -> 0°, 100% -> 90°
     return map(percent, 0, 100, 0, 90);
 }

@@ -13,7 +13,7 @@
 //   "STATE,<MODE>,<CONN>,<VALVE>,<WL>"
 //   example: "STATE,AUTO,CONNECTED,50,12.3"
 
-CommunicationCenter::CommunicationCenter(TankSystem* sys) : pSys(sys) {}
+CommunicationCenter::CommunicationCenter(Controller* sys) : pSys(sys) {}
 
 void CommunicationCenter::init() {
     // flags for tasks (optional)

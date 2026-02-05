@@ -1,11 +1,11 @@
 #include <Arduino.h>
-#include "model/TankSystem.h"
-#include "TankTask.h"
+#include "model/Controller.h"
+#include "ControllerTask.h"
 
 // Set false to disable debug prints
 static bool DEBUG = true;
 
-TankTask::TankTask(HWPlatform* hw)
+ControllerTask::ControllerTask(HWPlatform* hw)
     : pHW(hw),
       mode(SystemMode::AUTOMATIC),
       connectivity(ConnectivityState::UNCONNECTED),
@@ -14,23 +14,8 @@ TankTask::TankTask(HWPlatform* hw)
       lastButtonState(false)
       {}
 
-void TankTask::init() {
-    mode = SystemMode::AUTOMATIC;
-    connectivity = ConnectivityState::UNCONNECTED;
-    waterLevel = 0.0f;
-    valveOpening = 0;
-    lastButtonState = false;
 
-
-
-    refreshOutputs();
-
-    if (DEBUG) {
-        Serial.println("[WCS] TankTask initialized (AUTO, UNCONNECTED, valve=0%)");
-    }
-}
-
-void TankTask::tick() {
+void ControllerTask::tick() {
     // 1) Mode toggle (debounced, toggle once per press) -> like HWPlatform::test()
     if (isModeButtonPressed()) {
         toggleMode();
@@ -52,7 +37,7 @@ void TankTask::tick() {
         auto pot = pHW->getPotentiometer();
         if (pot) {
             pot->sync();
-            potPct = (int)pot->position();
+            potPct = (int)pot->getPosition();
         }
 
         Serial.print("MODE=");
@@ -65,7 +50,7 @@ void TankTask::tick() {
     }
 }
 
-void TankTask::test() {
+void ControllerTask::test() {
     //mode;              // 0=AUTO, 1=MANUAL (persists)
     static int lastReading = HIGH;    // because INPUT_PULLUP: released=HIGH
     static unsigned long lastDebounceTime = 0;
@@ -105,15 +90,15 @@ void TankTask::test() {
 
 /* --------- Mode & connectivity --------- */
 
-void TankTask::setMode(SystemMode m) {
+void ControllerTask::setMode(SystemMode m) {
     mode = m;
 }
 
-SystemMode TankTask::getMode() const {
+SystemMode ControllerTask::getMode() const {
     return mode;
 }
 
-void TankTask::toggleMode() {
+void ControllerTask::toggleMode() {
     mode = (mode == SystemMode::AUTOMATIC) ? SystemMode::MANUAL : SystemMode::AUTOMATIC;
 
     if (DEBUG) {
@@ -122,7 +107,7 @@ void TankTask::toggleMode() {
     }
 }
 
-void TankTask::setConnectivity(ConnectivityState s) {
+void ControllerTask::setConnectivity(ConnectivityState s) {
     connectivity = s;
 
     // Safety: if UNCONNECTED, close valve
@@ -131,40 +116,40 @@ void TankTask::setConnectivity(ConnectivityState s) {
     }
 }
 
-ConnectivityState TankTask::getConnectivity() const {
+ConnectivityState ControllerTask::getConnectivity() const {
     return connectivity;
 }
 
-bool TankTask::isManual() const {
+bool ControllerTask::isManual() const {
     return mode == SystemMode::MANUAL;
 }
 
-bool TankTask::isUnconnected() const {
+bool ControllerTask::isUnconnected() const {
     return connectivity == ConnectivityState::UNCONNECTED;
 }
 
 /* --------- Water level (optional for LCD) --------- */
 
-void TankTask::setWaterLevel(float wl) {
+void ControllerTask::setWaterLevel(float wl) {
     waterLevel = wl;
 }
 
-float TankTask::getWaterLevel() const {
+float ControllerTask::getWaterLevel() const {
     return waterLevel;
 }
 
 /* --------- Valve control --------- */
 
-void TankTask::setValveOpening(int percent) {
+void ControllerTask::setValveOpening(int percent) {
     valveOpening = clampPercent(percent);
 }
 
-int TankTask::getValveOpening() const {
+int ControllerTask::getValveOpening() const {
     return valveOpening;
 }
 
-void TankTask::applyValveToServo() {
-    auto servo = pHW->getValveMotor();
+void ControllerTask::applyValveToServo() {
+    auto servo = pHW->getMotor();
     if (!servo) return;
 
     // Safety: if UNCONNECTED, force closed
@@ -176,7 +161,7 @@ void TankTask::applyValveToServo() {
 /* --------- Operator inputs --------- */
 
 // Debounced pressed-event (toggle once per press), same logic as HWPlatform::test()
-bool TankTask::isModeButtonPressed() {
+bool ControllerTask::isModeButtonPressed() {
     auto btn = pHW->getToggleButton();
     if (!btn) return false;
 
@@ -195,20 +180,20 @@ bool TankTask::isModeButtonPressed() {
     return false;
 }
 
-int TankTask::readManualValveFromPot() {
+int ControllerTask::readManualValveFromPot() {
     auto pot = pHW->getPotentiometer();
     if (!pot) return 0;
 
     pot->sync();
 
     // Your PotentiometerImpl::position() should already be 0..100
-    int percent = (int)pot->position();
+    int percent = (int)pot->getPosition();
     return clampPercent(percent);
 }
 
 /* --------- Outputs: LCD --------- */
 
-void TankTask::updateDisplay() {
+void ControllerTask::updateDisplay() {
     auto lcd = pHW->getLcd();
     if (!lcd) return;
 
@@ -229,19 +214,19 @@ void TankTask::updateDisplay() {
     lcd->print("       ");
 }
 
-void TankTask::refreshOutputs() {
+void ControllerTask::refreshOutputs() {
     applyValveToServo();
     updateDisplay();
 }
 
 /* --------- helpers --------- */
 
-int TankTask::clampPercent(int v) const {
+int ControllerTask::clampPercent(int v) const {
     if (v < 0) return 0;
     if (v > 100) return 100;
     return v;
 }
 
-int TankTask::percentToServoAngle(int percent) const {
+int ControllerTask::percentToServoAngle(int percent) const {
     return map(percent, 0, 100, 0, 90);
 }

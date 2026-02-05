@@ -16,7 +16,7 @@ void PotentiometerImpl::sync() {
     updateSyncTime(millis());
 }
 
-unsigned int PotentiometerImpl::position() {
+unsigned int PotentiometerImpl::getPosition() {
     int raw = analogRead(pin);
 
     // Se nel tuo config.h NON esistono questi define, vedi nota sotto.

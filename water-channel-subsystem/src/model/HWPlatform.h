@@ -19,7 +19,7 @@ public:
     void test();  // inizializza i test
 
     // Motore della valvola
-    ServoMotorImpl* getValveMotor();
+    ServoMotorImpl* getMotor();
 
     // LCD dell’operatore
     LiquidCrystal_I2C* getLcd();
@@ -29,6 +29,7 @@ public:
 
     // Potenziometro che serve a controllare il motore se in manual mode
     PotentiometerImpl* getPotentiometer();
+    HWPlatform* getHWPlatform();
 
 private:
     // istanze concrete dei device

@@ -3,7 +3,7 @@
 
 #include "HWPlatform.h"
 #include "config.h"
-#include "model/TankSystem.h"
+#include "model/Controller.h"
 
 /*
  * Serial link between WCS (Arduino) and CUS (PC).
@@ -24,7 +24,7 @@
 
 class CommunicationCenter {
 public:
-    explicit CommunicationCenter(TankSystem* sys);
+    explicit CommunicationCenter(Controller* sys);
 
     void init();
 
@@ -39,7 +39,7 @@ public:
     bool checkAndResetNewValveCmd();
 
 private:
-    TankSystem* pSys;
+    Controller* pSys;
 
     bool newModeCmd;
     bool newValveCmd;

@@ -29,7 +29,7 @@ void HWPlatform::init() {
 
 // --- getters ---
 
-ServoMotorImpl* HWPlatform::getValveMotor() {
+ServoMotorImpl* HWPlatform::getMotor() {
     return pMotor;
 }
 
@@ -44,6 +44,8 @@ PotentiometerImpl* HWPlatform::getPotentiometer() {
 LiquidCrystal_I2C* HWPlatform::getLcd() {
     return pLcd;
 }
+
+
 
 /// ------------------ TEST ------------------
 
