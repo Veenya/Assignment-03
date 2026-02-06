@@ -3,7 +3,6 @@
 
 UserPanel::UserPanel(HWPlatform* pHW)
     : pHW(pHW), pResetButton(nullptr), resetPressed(false), prevResetPressed(false) {
-    // Prendiamo il bottone di reset dalla piattaforma hardware
     if (pHW) {
         pResetButton = pHW->getToggleButton();
         pLcd = pHW->getLcd();
@@ -42,16 +41,29 @@ void UserPanel::displayAutomatic() {
     pLcd->print("AUTOMATIC"); 
 }
 
-void UserPanel::displayManual() {
+void UserPanel::displayManualLocal() {
     pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("MANUAL"); 
+    pLcd->print("MANUAL_LOCAL)"); 
+}
+
+void UserPanel::displayManualRemote() {
+    pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->setCursor(0, 0);
+    pLcd->print("MANUAL_REMOTE)"); 
 }
 
 void UserPanel::displayUnconnected() {
     pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
     pLcd->print("UNCONNECTED"); 
+}
+
+void UserPanel::displayWaterLevel(int waterLevel) {
+    pLcd->setCursor(0, 1);
+    pLcd->print("WL:");
+    pLcd->print(waterLevel, 1);
+    pLcd->print("       ");
 }
 
 void UserPanel::prepareToSleep() {

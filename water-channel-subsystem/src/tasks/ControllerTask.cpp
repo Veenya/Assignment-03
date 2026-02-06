@@ -2,12 +2,11 @@
 #include "model/Controller.h"
 #include "ControllerTask.h"
 
-// Set false to disable debug prints
-static bool DEBUG = true;
-
-ControllerTask::ControllerTask(Controller* pController)
+ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter, UserPanel* pUserPanel)
     : 
     pController(pController),
+    pCommunicationCenter(pCommunicationCenter),
+    pUserPanel(pUserPanel),
     systemState(SystemState::AUTOMATIC),
     connectivityState(ConnectivityState::UNCONNECTED),
     waterLevel(0.0f),
@@ -17,63 +16,96 @@ ControllerTask::ControllerTask(Controller* pController)
 
 
 void ControllerTask::tick() {
-    this->systemState = pController->getSystemState();
     this->connectivityState = pController->getConnectivityState();
-    // TODO fare i manage() necessari
+    checkSystemState();
+    manageValve();
+    updateDisplay();
+}
 
 
-    // 1) Mode toggle (debounced, toggle once per press)
-    if (isModeButtonPressed()) {
-        toggleMode();
+/* --------- Operator inputs --------- */
+bool ControllerTask::isModeButtonPressed() {
+    auto btn = pHW->getToggleButton();
+    if (!btn) return false;
+    btn->sync();
+    return btn->isClickedAndReset();
+}
+
+int ControllerTask::readManualValveFromPot() {
+    auto pot = pHW->getPotentiometer();
+    if (!pot) return 0;
+
+    pot->sync();
+
+    // Your PotentiometerImpl::position() should already be 0..100
+    int percent = (int)pot->getPosition();
+    return pController->clampPercent(percent);
+}
+
+void ControllerTask::updateDisplay() {
+    if (connectivityState == ConnectivityState::UNCONNECTED) {
+        pUserPanel->displayUnconnected();
+    } else if (systemState == SystemState::MANUAL_LOCAL) {
+        pUserPanel->displayManualLocal();
+    } else if (systemState == SystemState::MANUAL_REMOTE) {
+        pUserPanel->displayManualRemote();
+    } else if (systemState == SystemState::AUTOMATIC) {
+        pUserPanel->displayAutomatic();
     }
 
-    // 2) Manual pot -> valve opening (keep your rule: only if CONNECTED)
-    if (systemState == SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::CONNECTED) {
-        int potPercent = readManualValveFromPot();
-        setValveOpening(potPercent);
-    }
+    pUserPanel->displayWaterLevel(waterLevel);
+}
 
-    // 3) Apply outputs
+void ControllerTask::refreshOutputs() {
     applyValveToServo();
     updateDisplay();
+}
 
-    
-    if (DEBUG) {
-        int potPct = 0;
-        auto pot = pHW->getPotentiometer();
-        if (pot) {
-            pot->sync();
-            potPct = (int)pot->getPosition();
-        }
+int ControllerTask::percentToServoAngle(int percent) const {
+    return map(percent, 0, 100, 0, 90);
+}
 
-        Serial.print("MODE=");
-        Serial.print(systemState == SystemState::AUTOMATIC ? "AUTO" : "MANUAL_LOCAL");
-        Serial.print("  POT=");
-        Serial.print(potPct);
-        Serial.print("%  VALVE=");
-        Serial.print(getValveOpening());
-        Serial.println("%");
+void ControllerTask::checkSystemState() {
+    // entrami sono check and reset del flag
+    if (isModeButtonPressed()) {
+        pController->setSystemState(SystemState::MANUAL_LOCAL);
+        this->systemState = SystemState::MANUAL_LOCAL;
+    }
+    if (pCommunicationCenter->checkAndResetNewModeCmd()) {
+        this->systemState = pController->getSystemState();
     }
 }
 
-
-/* --------- Mode & connectivityState --------- */
-
-void ControllerTask::setMode(SystemState m) {
-    systemState = m;
+void ControllerTask::manageValve() {
+    // 2) Manual pot -> valve opening (keep your rule: only if CONNECTED)
+    if (systemState == SystemState::MANUAL_LOCAL) {
+        setValveOpening(pController->getPotentiometerPosition());
+    } else if (connectivityState == ConnectivityState::CONNECTED) { // se disconnesso chiudo
+        setValveOpening(0);
+    } else {
+        setValveOpening(pController->getValveOpening());
+    }
+    applyValveToServo();
 }
 
-SystemState ControllerTask::getMode() const {
+void ControllerTask::applyValveToServo() {
+    auto servo = pHW->getMotor();
+    if (!servo) return;
+
+    // Safety: if UNCONNECTED, force closed
+    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
+    int angle = percentToServoAngle(effectivePercent);
+    servo->setPosition(angle);
+}
+
+
+
+void ControllerTask::setSystemState(SystemState systemMode) {
+    systemState = systemMode;
+}
+
+SystemState ControllerTask::getSystemState() const {
     return systemState;
-}
-
-void ControllerTask::toggleMode() {
-    systemState = (systemState == SystemState::AUTOMATIC) ? SystemState::MANUAL_LOCAL : SystemState::AUTOMATIC;
-
-    if (DEBUG) {
-        Serial.print("[WCS] Mode toggled -> ");
-        Serial.println(systemState == SystemState::MANUAL_LOCAL ? "MANUAL_LOCAL" : "AUTOMATIC");
-    }
 }
 
 void ControllerTask::setConnectivity(ConnectivityState s) {
@@ -99,8 +131,8 @@ bool ControllerTask::isUnconnected() const {
 
 /* --------- Water level (optional for LCD) --------- */
 
-void ControllerTask::setWaterLevel(float wl) {
-    waterLevel = wl;
+void ControllerTask::setWaterLevel(float waterLevel) {
+    waterLevel = waterLevel;
 }
 
 float ControllerTask::getWaterLevel() const {
@@ -110,83 +142,9 @@ float ControllerTask::getWaterLevel() const {
 /* --------- Valve control --------- */
 
 void ControllerTask::setValveOpening(int percent) {
-    valveOpening = clampPercent(percent);
+    valveOpening = pController->clampPercent(percent);
 }
 
 int ControllerTask::getValveOpening() const {
     return valveOpening;
-}
-
-void ControllerTask::applyValveToServo() {
-    auto servo = pHW->getMotor();
-    if (!servo) return;
-
-    // Safety: if UNCONNECTED, force closed
-    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
-    int angle = percentToServoAngle(effectivePercent);
-    servo->setPosition(angle);
-}
-
-/* --------- Operator inputs --------- */
-
-// Debounced pressed-event (toggle once per press)
-bool ControllerTask::isModeButtonPressed() {
-    auto btn = pHW->getToggleButton();
-    if (!btn) return false;
-
-    // Update button internal state
-    btn->sync();
-
-    return false;
-}
-
-int ControllerTask::readManualValveFromPot() {
-    auto pot = pHW->getPotentiometer();
-    if (!pot) return 0;
-
-    pot->sync();
-
-    // Your PotentiometerImpl::position() should already be 0..100
-    int percent = (int)pot->getPosition();
-    return clampPercent(percent);
-}
-
-/* --------- Outputs: LCD --------- */
-
-void ControllerTask::updateDisplay() {
-    auto lcd = pHW->getLcd();
-    if (!lcd) return;
-
-    lcd->setCursor(0, 0);
-    lcd->print("V:");
-    lcd->print(getValveOpening());
-    lcd->print("% ");
-
-    if (connectivityState == ConnectivityState::UNCONNECTED) {
-        lcd->print("UNCONN ");
-    } else {
-        lcd->print(systemState == SystemState::MANUAL_LOCAL ? "MANUAL_LOCAL " : "AUTO   ");
-    }
-
-    lcd->setCursor(0, 1);
-    lcd->print("WL:");
-    lcd->print(waterLevel, 1);
-    lcd->print("       ");
-}
-
-void ControllerTask::refreshOutputs() {
-    applyValveToServo();
-    updateDisplay();
-}
-
-/* --------- helpers --------- */
-
-int ControllerTask::clampPercent(int v) const {
-    if (v < 0) return 0;
-    if (v > 100) return 100;
-    return v;
-}
-
-int ControllerTask::percentToServoAngle(int percent) const {
-    return map(percent, 0, 100, 0, 90);
 }

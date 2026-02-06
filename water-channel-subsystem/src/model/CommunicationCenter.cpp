@@ -2,18 +2,7 @@
 #include <Arduino.h>
 #include "kernel/MsgService.h"
 
-// Commands from CUS -> WCS (examples):
-//   "MODE,AUTO"
-//   "MODE,MANUAL_LOCAL"
-//   "VALVE,50"
-//   "WL,12.3"          (optional; for LCD)
-//   "PING"             (optional; heartbeat)
-//
-// Status from WCS -> CUS:
-//   "STATE,<MODE>,<CONN>,<VALVE>,<WL>"
-//   example: "STATE,AUTO,CONNECTED,50,12.3"
-
-CommunicationCenter::CommunicationCenter(Controller* sys) : pSys(sys) {}
+CommunicationCenter::CommunicationCenter(Controller* sys) : pController(sys) {}
 
 void CommunicationCenter::init() {
     // flags for tasks (optional)
@@ -28,18 +17,24 @@ void CommunicationCenter::init() {
 
 void CommunicationCenter::notifyNewState() {
     // Send compact state snapshot to CUS
-    String modeStr = (pSys->getMode() == SystemState::MANUAL_LOCAL) ? "MANUAL_LOCAL" : "AUTO";
-    String connStr = (pSys->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
-
-    int valve = pSys->getValveOpening();
-    float wl = pSys->getWaterLevel(); // if you don't use WL on WCS, send 0.0
+    String systemStateStr;
+    String connectionStateStr;
+    int valveOpening = pController->getValveOpening();
+    
+    if (pController->getSystemState() == SystemState::MANUAL_LOCAL) {
+        systemStateStr = "MANUAL_LOCAL";
+    } else if (pController->getSystemState() == SystemState::MANUAL_REMOTE) {
+        systemStateStr = "MANUAL_REMOTE";
+    } else if (pController->getSystemState() == SystemState::AUTOMATIC) {
+        systemStateStr = "AUTOMATIC";
+    }
+    
+    connectionStateStr = (pController->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
 
     MsgService.sendMsg(
-        String("STATE,") +
-        modeStr + "," +
-        connStr + "," +
-        String(valve) + "," +
-        String(wl, 1)
+        systemStateStr + "," +
+        connectionStateStr + "," +
+        String(valveOpening)
     );
 }
 
@@ -51,42 +46,35 @@ void CommunicationCenter::sync() {
             String content = msg->getContent();
             // Any valid message means CUS is reachable -> CONNECTED
             lastRxMs = millis();
-            pSys->setConnectivity(ConnectivityState::CONNECTED);
+            pController->setConnectivity(ConnectivityState::CONNECTED);
 
-            // Parse CSV-like messages
-            // Expected formats:
-            // MODE,AUTO
-            // MODE,MANUAL_LOCAL
-            // VALVE,NN
-            // WL,XX.X
-            // PING
             if (content == "PING") {
                 // nothing else to do
             } else if (content.startsWith("MODE,")) {
                 String m = content.substring(5);
                 m.trim();
                 if (m == "MANUAL_LOCAL") {
-                    pSys->setMode(SystemState::MANUAL_LOCAL);
+                    pController->setSystemState(SystemState::MANUAL_LOCAL);
                     newModeCmd = true;
                 } else if (m == "MANUAL_REMOTE") {
-                    pSys->setMode(SystemState::MANUAL_REMOTE);
+                    pController->setSystemState(SystemState::MANUAL_REMOTE);
                     newModeCmd = true;
                 } else if (m == "AUTO") {
-                    pSys->setMode(SystemState::AUTOMATIC);
+                    pController->setSystemState(SystemState::AUTOMATIC);
                     newModeCmd = true;
                 }
             } else if (content.startsWith("VALVE,")) {
                 String vStr = content.substring(6);
                 vStr.trim();
                 int v = vStr.toInt();
-                pSys->setValveOpening(v);
+                pController->setValveOpening(v);
                 newValveCmd = true;
             } else if (content.startsWith("WL,")) {
                 // optional: show WL sent by CUS on LCD
                 String wlStr = content.substring(3);
                 wlStr.trim();
-                float wl = wlStr.toFloat();
-                pSys->setWaterLevel(wl);
+                float waterLevel = wlStr.toFloat();
+                pController->setWaterLevel(waterLevel);
             }
 
             delete msg;
@@ -97,9 +85,9 @@ void CommunicationCenter::sync() {
     unsigned long now = millis();
     if (lastRxMs == 0) {
         // never received anything yet
-        pSys->setConnectivity(ConnectivityState::UNCONNECTED);
+        pController->setConnectivity(ConnectivityState::UNCONNECTED);
     } else if (now - lastRxMs > T2_MS) {
-        pSys->setConnectivity(ConnectivityState::UNCONNECTED);
+        pController->setConnectivity(ConnectivityState::UNCONNECTED);
     }
 }
 

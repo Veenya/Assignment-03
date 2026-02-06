@@ -3,8 +3,10 @@
 #include "config.h"
 
 CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController)
-    : pCommunicationCenter(pCommunicationCenter), pController(pController) {
-    setState(SystemState::AUTOMATIC);
+    : 
+    pCommunicationCenter(pCommunicationCenter), 
+    pController(pController) {
+        setState(SystemState::AUTOMATIC);
 }
 
 void CommunicationTask::tick() {

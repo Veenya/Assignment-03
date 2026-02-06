@@ -1,5 +1,5 @@
-#ifndef __TANK_SYSTEM__
-#define __TANK_SYSTEM__
+#ifndef __CONTROLLER__
+#define __CONTROLLER__
 
 #include "HWPlatform.h"
 #include "UserPanel.h"
@@ -26,11 +26,11 @@ public:
     explicit Controller(HWPlatform* hw);
 
     void init();
-    void sync(); // refresh inputs/outputs (read button/pot, update lcd/servo if needed)
+    void sync();
 
     /* --------- Mode & connectivity --------- */
-    void setMode(SystemState mode);
-    SystemState getMode();
+    void setSystemState(SystemState systemState);
+    SystemState getSystemState();
     void toggleMode();
 
     void setConnectivity(ConnectivityState state);
@@ -44,13 +44,12 @@ public:
      * On WCS you may show WL on LCD if CUS sends it.
      * If not needed, you can remove these.
      */
-    void setWaterLevel(float wl);
+    void setWaterLevel(float waterLevel);
     float getWaterLevel();
 
     /* --------- Valve control --------- */
     // Commanded valve opening in percentage [0..100]
     void setValveOpening(int percent);
-    int getValveOpening();
 
     // Apply the commanded opening to the servo (0°..90°)
     void applyValveToServo();
@@ -60,34 +59,28 @@ public:
     bool isModeButtonPressed();
 
     // Potentiometer reading mapped to 0..100 (used only in MANUAL)
-    int readManualValveFromPot();
+    int getValveOpening();
 
     /* --------- Outputs --------- */
     // LCD shows: valve%, mode (AUTO/MANUAL) or UNCONNECTED
     void updateDisplay();
 
     void setPotentiometerPosition(float potentiometerPosition); 
+    float getPotentiometerPosition();
     HWPlatform* getHWPlatform();
-
-    SystemState getSystemState();
-    void setSystemState(SystemState systemState);
     ConnectivityState getConnectivityState();
     void setConnectivityState(ConnectivityState connectivityState);
+    int clampPercent(int v);
 
-// private:
+private:
+    int percentToServoAngle(int percent);
     HWPlatform* pHW;
-    // state
     SystemState systemState; 
     ConnectivityState connectivityState;
+    
     float waterLevel;                // last WL known (optional, for LCD)
-    int valveOpening;                // 0..100 commanded/current
-
-    // cached input readings (optional)
+    int valveOpeningPercent;                // 0..100 commanded/current
     bool lastButtonState;
-
-    // helpers
-    int clampPercent(int v);
-    int percentToServoAngle(int percent);
     float potentiometerPosition;
 };
 

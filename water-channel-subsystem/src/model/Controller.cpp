@@ -12,7 +12,7 @@ Controller::Controller(HWPlatform* hw)
       systemState(SystemState::AUTOMATIC),
       connectivityState(ConnectivityState::UNCONNECTED),
       waterLevel(0.0f),
-      valveOpening(0),
+      valveOpeningPercent(0),
       lastButtonState(false) {}
 
 void Controller::init() {
@@ -51,7 +51,7 @@ void Controller::sync() {
 
     // 2) If manual and connected, valve opening follows potentiometer
     if (systemState == SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::CONNECTED) {
-        int potPercent = readManualValveFromPot();
+        int potPercent = getValveOpening();
         setValveOpening(potPercent);
         // displayOpeningLevel(potPercent);
     }
@@ -63,11 +63,7 @@ void Controller::sync() {
 
 /* --------- Mode & connectivityState --------- */
 
-void Controller::setMode(SystemState m) {
-    systemState = m;
-}
-
-SystemState Controller::getMode() {
+SystemState Controller::getSystemState() {
     return systemState;
 }
 
@@ -113,8 +109,8 @@ bool Controller::isUnconnected() {
 
 /* --------- Water level (optional for LCD) --------- */
 
-void Controller::setWaterLevel(float wl) {
-    waterLevel = wl;
+void Controller::setWaterLevel(float waterLevel) {
+    waterLevel = waterLevel;
 }
 
 float Controller::getWaterLevel() {
@@ -124,11 +120,7 @@ float Controller::getWaterLevel() {
 /* --------- Valve control --------- */
 
 void Controller::setValveOpening(int percent) {
-    valveOpening = clampPercent(percent);
-}
-
-int Controller::getValveOpening() {
-    return valveOpening;
+    valveOpeningPercent = clampPercent(percent);
 }
 
 HWPlatform* Controller::getHWPlatform() {
@@ -136,9 +128,6 @@ HWPlatform* Controller::getHWPlatform() {
 }
 
 
-SystemState Controller::getSystemState() {
-    return this->systemState;
-}
 void Controller::setSystemState(SystemState systemState) {
     this->systemState = systemState;
 }
@@ -164,7 +153,7 @@ void Controller::applyValveToServo() {
     }
 
     // If UNCONNECTED, force closed (spec safety)
-    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
+    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpeningPercent;
     int angle = percentToServoAngle(effectivePercent);
     servo->setPosition(angle);
 }
@@ -185,39 +174,36 @@ bool Controller::isModeButtonPressed() {
     return pressedEdge;
 }
 
-int Controller::readManualValveFromPot() {
-    auto pot = pHW->getPotentiometer();  // <-- rename to your HWPlatform method
-    if (!pot)
-        return 0;
+float Controller::getPotentiometerPosition() {
+    return this->potentiometerPosition;
+}
 
-    pot->sync();
-    // assume pot returns 0..1023; map to 0..100
-    int raw = pot->getPosition();
-    int percent = map(raw, 0, 1023, 0, 100);
-    return clampPercent(percent);
+int Controller::getValveOpening() {
+    return clampPercent(map(potentiometerPosition, 0, 1023, 0, 100));
 }
 
 /* --------- Outputs: LCD --------- */
 
 void Controller::updateDisplay() {
-    auto lcd = pHW->getLcd();  // <-- rename to your HWPlatform method
+    auto lcd = pHW->getLcd();
     if (!lcd)
         return;
 
-    // Avoid heavy flicker: don’t clear constantly if you update frequently.
-    // If you prefer, you can clear, but it may flicker.
-    lcd->setCursor(0, 0);
+    lcd->setCursor(0, 0); // Avoid heavy flicker: don’t clear constantly if you update frequently.
 
     // Row 0: valve + systemState
-    // Example: "V: 50% AUTO"
     lcd->print("V:");
-    lcd->print(getValveOpening());
+    lcd->print(valveOpeningPercent);
     lcd->print("% ");
 
     if (connectivityState == ConnectivityState::UNCONNECTED) {
         lcd->print("UNCONN");
-    } else {
-        lcd->print(systemState == SystemState::MANUAL_LOCAL ? "MANUAL_LOCAL" : "AUTO  ");
+    } else if (systemState == SystemState::MANUAL_LOCAL) {
+        lcd->print("MANUAL_LOCAL");
+    } else if (systemState == SystemState::MANUAL_REMOTE) {
+        lcd->print("MANUAL_REMOTE");
+    } else if (systemState == SystemState::AUTOMATIC) {
+        lcd->print("AUTOMATIC");
     }
 
     // Row 1: WL (optional)

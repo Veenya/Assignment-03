@@ -37,7 +37,7 @@ void setup() {
     pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    pControllerTask = new ControllerTask(pController); 
+    pControllerTask = new ControllerTask(pController, pCommunicationCenter, pUserPanel); 
     pControllerTask->init(TANK_PERIOD);
 
     pPotentiometerTask = new PotentiometerTask(pController);
@@ -48,5 +48,5 @@ void setup() {
 }
 
 void loop() {
-    //scheduler.schedule();
+    scheduler.schedule();
 }

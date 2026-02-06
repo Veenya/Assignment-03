@@ -9,7 +9,7 @@
 class CommunicationTask : public Task {
 public:
     CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController);
-    void tick(); // override
+    void tick();
 
 private:
     unsigned long lastStateUpdate;

@@ -39,7 +39,7 @@ public:
     bool checkAndResetNewValveCmd();
 
 private:
-    Controller* pSys;
+    Controller* pController;
 
     bool newModeCmd;
     bool newValveCmd;

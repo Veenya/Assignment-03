@@ -11,8 +11,11 @@ bool ButtonImpl::isPressed() {
     return pressed;
 }
 
-bool ButtonImpl::isClicked() {
-    return clicked;
+bool ButtonImpl::isClickedAndReset() {
+    bool wasClicked = clicked;
+    clicked = false;
+    return wasClicked;
+    
 }
 
 void ButtonImpl::sync() {

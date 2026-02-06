@@ -3,6 +3,7 @@
 
 #include "model/HWPlatform.h"
 #include "model/States.h"
+#include "model/CommunicationCenter.h"
 #include "kernel/Task.h"
 #include "config.h"
 
@@ -16,12 +17,12 @@
  */
 class ControllerTask : public Task {
 public:
-    explicit ControllerTask(Controller* pController);
+    explicit ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter, UserPanel* pUserPanel);
     void tick();
 
     /* --------- Mode & connectivity --------- */
-    void setMode(SystemState mode);
-    SystemState getMode() const;
+    void setSystemState(SystemState systemMode);
+    SystemState getSystemState() const;
 
     void toggleMode();
 
@@ -32,7 +33,7 @@ public:
     bool isUnconnected() const;
 
     /* --------- Water level (optional for LCD) --------- */
-    void setWaterLevel(float wl);
+    void setWaterLevel(float waterLevel);
     float getWaterLevel() const;
 
     /* --------- Valve control --------- */
@@ -52,17 +53,16 @@ public:
 private:
     HWPlatform* pHW;
     Controller* pController;
+    CommunicationCenter* pCommunicationCenter;
+    UserPanel* pUserPanel;
     SystemState systemState; 
     ConnectivityState connectivityState;
     float waterLevel;
     int valveOpening;
-
-    // cached input readings
     bool lastButtonState;
-
-    // helpers
-    int clampPercent(int v) const;
     int percentToServoAngle(int percent) const;
+    void checkSystemState();
+    void manageValve();
 };
 
 #endif

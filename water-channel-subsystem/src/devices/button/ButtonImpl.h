@@ -7,7 +7,7 @@ class ButtonImpl : public Button {
 public:
     ButtonImpl(int pin);
     bool isPressed() override;
-    bool isClicked() override;
+    bool isClickedAndReset() override;
     void sync() override;
 
 private:

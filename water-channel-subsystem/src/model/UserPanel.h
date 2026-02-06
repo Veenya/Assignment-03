@@ -22,7 +22,8 @@ public:
     void displayOpeningLevel(float val);
     //void displaySystemState();
     void displayAutomatic();
-    void displayManual();
+    void displayManualRemote();
+    void displayManualLocal();
     void displayUnconnected();
     
     void prepareToSleep();
@@ -38,11 +39,12 @@ public:
     // Ritorna true SOLO quando il bottone passa da "non premuto" a "premuto"
     // (fronte di salita). Utile per non reagire mille volte mentre è tenuto premuto.
     bool isResetPressedEdge();
-
+    void displayWaterLevel(int waterLevel);
 private:
     HWPlatform* pHW;
     Button* pResetButton;
     LiquidCrystal_I2C* pLcd;
+    
 
     bool resetPressed;      // stato attuale
     bool prevResetPressed;  // stato al tick precedente
