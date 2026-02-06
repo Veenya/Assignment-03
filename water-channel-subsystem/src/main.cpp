@@ -16,7 +16,6 @@ Controller *pController;
 CommunicationCenter* pCommunicationCenter;
 ControllerTask* pControllerTask;
 Task* pCommunicationTask;
-Task* pControllerTask;
 PotentiometerTask* pPotentiometerTask;
 
 void setup() {
@@ -50,5 +49,4 @@ void setup() {
 
 void loop() {
     //scheduler.schedule();
-    // pControllerTask->test();
 }

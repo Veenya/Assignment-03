@@ -36,7 +36,8 @@ public:
     void setConnectivity(ConnectivityState state);
     ConnectivityState getConnectivity();
 
-    bool isManual();
+    bool isManualRemote();
+    bool isManualLocal();
     bool isUnconnected();
 
     /* --------- Water level (from CUS -> WCS for display) ---------
@@ -68,10 +69,10 @@ public:
     void setPotentiometerPosition(float potentiometerPosition); 
     HWPlatform* getHWPlatform();
 
-    SystemState Controller::getSystemState();
-    void Controller::setSystemState(SystemState systemState);
-    ConnectivityState Controller::getConnectivityState();
-    void Controller::setConnectivityState(ConnectivityState connectivityState);
+    SystemState getSystemState();
+    void setSystemState(SystemState systemState);
+    ConnectivityState getConnectivityState();
+    void setConnectivityState(ConnectivityState connectivityState);
 
 // private:
     HWPlatform* pHW;

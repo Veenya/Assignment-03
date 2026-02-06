@@ -3,7 +3,8 @@
 
 enum class SystemState {
     AUTOMATIC,
-    MANUAL
+    MANUAL_LOCAL,
+    MANUAL_REMOTE
 };
 
 enum class ConnectivityState {

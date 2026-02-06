@@ -18,7 +18,6 @@ class ControllerTask : public Task {
 public:
     explicit ControllerTask(Controller* pController);
     void tick();
-    void test();
 
     /* --------- Mode & connectivity --------- */
     void setMode(SystemState mode);
@@ -53,8 +52,6 @@ public:
 private:
     HWPlatform* pHW;
     Controller* pController;
-
-    // state
     SystemState systemState; 
     ConnectivityState connectivityState;
     float waterLevel;

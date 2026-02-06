@@ -4,7 +4,7 @@
 
 // Commands from CUS -> WCS (examples):
 //   "MODE,AUTO"
-//   "MODE,MANUAL"
+//   "MODE,MANUAL_LOCAL"
 //   "VALVE,50"
 //   "WL,12.3"          (optional; for LCD)
 //   "PING"             (optional; heartbeat)
@@ -28,7 +28,7 @@ void CommunicationCenter::init() {
 
 void CommunicationCenter::notifyNewState() {
     // Send compact state snapshot to CUS
-    String modeStr = (pSys->getMode() == SystemState::MANUAL) ? "MANUAL" : "AUTO";
+    String modeStr = (pSys->getMode() == SystemState::MANUAL_LOCAL) ? "MANUAL_LOCAL" : "AUTO";
     String connStr = (pSys->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
 
     int valve = pSys->getValveOpening();
@@ -56,7 +56,7 @@ void CommunicationCenter::sync() {
             // Parse CSV-like messages
             // Expected formats:
             // MODE,AUTO
-            // MODE,MANUAL
+            // MODE,MANUAL_LOCAL
             // VALVE,NN
             // WL,XX.X
             // PING
@@ -65,8 +65,11 @@ void CommunicationCenter::sync() {
             } else if (content.startsWith("MODE,")) {
                 String m = content.substring(5);
                 m.trim();
-                if (m == "MANUAL") {
-                    pSys->setMode(SystemState::MANUAL);
+                if (m == "MANUAL_LOCAL") {
+                    pSys->setMode(SystemState::MANUAL_LOCAL);
+                    newModeCmd = true;
+                } else if (m == "MANUAL_REMOTE") {
+                    pSys->setMode(SystemState::MANUAL_REMOTE);
                     newModeCmd = true;
                 } else if (m == "AUTO") {
                     pSys->setMode(SystemState::AUTOMATIC);

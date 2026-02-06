@@ -6,13 +6,14 @@
 static bool DEBUG = true;
 
 ControllerTask::ControllerTask(Controller* pController)
-    : systemState(SystemState::AUTOMATIC),
-      connectivityState(ConnectivityState::UNCONNECTED),
-      waterLevel(0.0f),
-      valveOpening(0),
-      lastButtonState(false),
-      pController(pController)
-      {}
+    : 
+    pController(pController),
+    systemState(SystemState::AUTOMATIC),
+    connectivityState(ConnectivityState::UNCONNECTED),
+    waterLevel(0.0f),
+    valveOpening(0),
+    lastButtonState(false)
+    {}
 
 
 void ControllerTask::tick() {
@@ -21,13 +22,13 @@ void ControllerTask::tick() {
     // TODO fare i manage() necessari
 
 
-    // 1) Mode toggle (debounced, toggle once per press) -> like HWPlatform::test()
+    // 1) Mode toggle (debounced, toggle once per press)
     if (isModeButtonPressed()) {
         toggleMode();
     }
 
     // 2) Manual pot -> valve opening (keep your rule: only if CONNECTED)
-    if (systemState == SystemState::MANUAL && connectivityState == ConnectivityState::CONNECTED) {
+    if (systemState == SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
     }
@@ -36,7 +37,7 @@ void ControllerTask::tick() {
     applyValveToServo();
     updateDisplay();
 
-    // 4) Serial debug similar to test()
+    
     if (DEBUG) {
         int potPct = 0;
         auto pot = pHW->getPotentiometer();
@@ -46,7 +47,7 @@ void ControllerTask::tick() {
         }
 
         Serial.print("MODE=");
-        Serial.print(systemState == SystemState::AUTOMATIC ? "AUTO" : "MANUAL");
+        Serial.print(systemState == SystemState::AUTOMATIC ? "AUTO" : "MANUAL_LOCAL");
         Serial.print("  POT=");
         Serial.print(potPct);
         Serial.print("%  VALVE=");
@@ -55,43 +56,6 @@ void ControllerTask::tick() {
     }
 }
 
-void ControllerTask::test() {
-    //systemState;              // 0=AUTO, 1=MANUAL (persists)
-    static int lastReading = HIGH;    // because INPUT_PULLUP: released=HIGH
-    static unsigned long lastDebounceTime = 0;
-    const unsigned long debounceMs = 40;
-
-    // Read raw button (pressed = LOW)
-    int reading = digitalRead(BUTTON_PIN);
-
-    // Debounce: detect stable change
-    if (reading != lastReading) {
-        lastDebounceTime = millis();
-        lastReading = reading;
-    }
-
-    // When stable for debounceMs and currently pressed -> toggle once
-    static int stableState = HIGH;
-    if ((millis() - lastDebounceTime) > debounceMs) {
-        if (reading != stableState) {
-            stableState = reading;
-
-            if (stableState == LOW) {     // pressed event
-                // toggle
-                toggleMode();
-            }
-        }
-    }
-
-    // Pot (your position() should already be 0..100)
-    int pct = readManualValveFromPot();
-    
-    //pMotor->setPosition(pct);
-    setValveOpening(pct);
-    // servo->setPosition(angle);
-
-    refreshOutputs();
-}
 
 /* --------- Mode & connectivityState --------- */
 
@@ -104,11 +68,11 @@ SystemState ControllerTask::getMode() const {
 }
 
 void ControllerTask::toggleMode() {
-    systemState = (systemState == SystemState::AUTOMATIC) ? SystemState::MANUAL : SystemState::AUTOMATIC;
+    systemState = (systemState == SystemState::AUTOMATIC) ? SystemState::MANUAL_LOCAL : SystemState::AUTOMATIC;
 
     if (DEBUG) {
         Serial.print("[WCS] Mode toggled -> ");
-        Serial.println(systemState == SystemState::MANUAL ? "MANUAL" : "AUTOMATIC");
+        Serial.println(systemState == SystemState::MANUAL_LOCAL ? "MANUAL_LOCAL" : "AUTOMATIC");
     }
 }
 
@@ -126,7 +90,7 @@ ConnectivityState ControllerTask::getConnectivity() const {
 }
 
 bool ControllerTask::isManual() const {
-    return systemState == SystemState::MANUAL;
+    return systemState == SystemState::MANUAL_LOCAL;
 }
 
 bool ControllerTask::isUnconnected() const {
@@ -165,22 +129,13 @@ void ControllerTask::applyValveToServo() {
 
 /* --------- Operator inputs --------- */
 
-// Debounced pressed-event (toggle once per press), same logic as HWPlatform::test()
+// Debounced pressed-event (toggle once per press)
 bool ControllerTask::isModeButtonPressed() {
     auto btn = pHW->getToggleButton();
     if (!btn) return false;
 
     // Update button internal state
     btn->sync();
-
-    // We want: reading == LOW when pressed, HIGH when released (INPUT_PULLUP semantics)
-    // Assumption: btn->isPressed() == true when physically pressed.
-    // If in your implementation it's inverted, change this line accordingly.
-    int reading = btn->isPressed() ? LOW : HIGH;
-
-    // Debounce: detect change
-
-
 
     return false;
 }
@@ -210,7 +165,7 @@ void ControllerTask::updateDisplay() {
     if (connectivityState == ConnectivityState::UNCONNECTED) {
         lcd->print("UNCONN ");
     } else {
-        lcd->print(systemState == SystemState::MANUAL ? "MANUAL " : "AUTO   ");
+        lcd->print(systemState == SystemState::MANUAL_LOCAL ? "MANUAL_LOCAL " : "AUTO   ");
     }
 
     lcd->setCursor(0, 1);

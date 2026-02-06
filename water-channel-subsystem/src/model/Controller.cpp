@@ -28,16 +28,16 @@ void Controller::init() {
 void Controller::sync() {
     // Typical loop:
     // - read button edge -> toggle systemState locally (operator panel)
-    // - if MANUAL -> read pot -> set valveOpening
+    // - if MANUAL_LOCAL -> read pot -> set valveOpening
     // - apply servo + update lcd
 
     // 1) Button toggle (edge detect)
     bool pressed = isModeButtonPressed();
     if (pressed) {
         if (systemState == SystemState::AUTOMATIC) {
-            systemState = SystemState::MANUAL;
+            systemState = SystemState::MANUAL_LOCAL;
             if (DEBUG) {
-                Serial.println("[WCS] Mode toggled -> MANUAL");
+                Serial.println("[WCS] Mode toggled -> MANUAL_LOCAL");
                 // displayManual();
             }
         } else {
@@ -50,7 +50,7 @@ void Controller::sync() {
     }
 
     // 2) If manual and connected, valve opening follows potentiometer
-    if (systemState == SystemState::MANUAL && connectivityState == ConnectivityState::CONNECTED) {
+    if (systemState == SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::CONNECTED) {
         int potPercent = readManualValveFromPot();
         setValveOpening(potPercent);
         // displayOpeningLevel(potPercent);
@@ -73,9 +73,9 @@ SystemState Controller::getMode() {
 
 void Controller::toggleMode() {
     if (systemState == SystemState::AUTOMATIC) {
-        systemState = SystemState::MANUAL;
+        systemState = SystemState::MANUAL_LOCAL;
         if (DEBUG) {
-            Serial.println("[WCS] Mode toggled -> MANUAL");
+            Serial.println("[WCS] Mode toggled -> MANUAL_LOCAL");
         }
     } else {
         systemState = SystemState::AUTOMATIC;
@@ -98,9 +98,14 @@ ConnectivityState Controller::getConnectivity() {
     return connectivityState;
 }
 
-bool Controller::isManual() {
-    return systemState == SystemState::MANUAL;
+bool Controller::isManualRemote() {
+    return systemState == SystemState::MANUAL_REMOTE;
 }
+
+bool Controller::isManualLocal() {
+    return systemState == SystemState::MANUAL_LOCAL;
+}
+
 
 bool Controller::isUnconnected() {
     return connectivityState == ConnectivityState::UNCONNECTED;
@@ -212,7 +217,7 @@ void Controller::updateDisplay() {
     if (connectivityState == ConnectivityState::UNCONNECTED) {
         lcd->print("UNCONN");
     } else {
-        lcd->print(systemState == SystemState::MANUAL ? "MANUAL" : "AUTO  ");
+        lcd->print(systemState == SystemState::MANUAL_LOCAL ? "MANUAL_LOCAL" : "AUTO  ");
     }
 
     // Row 1: WL (optional)
