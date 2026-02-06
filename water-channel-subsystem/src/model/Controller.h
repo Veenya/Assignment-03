@@ -24,14 +24,11 @@
 class Controller {
 public:
     explicit Controller(HWPlatform* hw);
-
     void init();
-    void sync();
 
     /* --------- Mode & connectivity --------- */
     void setSystemState(SystemState systemState);
     SystemState getSystemState();
-    void toggleMode();
 
     void setConnectivity(ConnectivityState state);
     ConnectivityState getConnectivity();
@@ -77,6 +74,8 @@ private:
     HWPlatform* pHW;
     SystemState systemState; 
     ConnectivityState connectivityState;
+    ServoMotorImpl* pServo;
+    ButtonImpl* pBtn;
     
     float waterLevel;                // last WL known (optional, for LCD)
     int valveOpeningPercent;                // 0..100 commanded/current

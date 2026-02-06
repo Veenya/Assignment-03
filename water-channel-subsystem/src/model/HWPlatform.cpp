@@ -19,10 +19,10 @@ void HWPlatform::init() {
     pLcd->backlight();
     pLcd->clear();
 
-    if (pMotor) {
-        pMotor->motorOn();
-        pMotor->setPosition(0);
-    }
+
+    // pMotor->motorOn();
+    // pMotor->setPosition(0);
+
 
     Serial.println("HWPlatform inizializzata");
 }
@@ -33,7 +33,7 @@ ServoMotorImpl* HWPlatform::getMotor() {
     return pMotor;
 }
 
-ButtonImpl* HWPlatform::getToggleButton() {
+ButtonImpl* HWPlatform::getButton() {
     return pButton;
 }
 

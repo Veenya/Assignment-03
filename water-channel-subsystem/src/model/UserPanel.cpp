@@ -4,7 +4,7 @@
 UserPanel::UserPanel(HWPlatform* pHW)
     : pHW(pHW), pResetButton(nullptr), resetPressed(false), prevResetPressed(false) {
     if (pHW) {
-        pResetButton = pHW->getToggleButton();
+        pResetButton = pHW->getButton();
         pLcd = pHW->getLcd();
     }
 }

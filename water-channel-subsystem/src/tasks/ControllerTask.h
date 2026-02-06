@@ -57,6 +57,10 @@ private:
     UserPanel* pUserPanel;
     SystemState systemState; 
     ConnectivityState connectivityState;
+    ServoMotorImpl* pServo;
+    PotentiometerImpl* pPotentiometer;
+    ButtonImpl* pBtn;
+
     float waterLevel;
     int valveOpening;
     bool lastButtonState;

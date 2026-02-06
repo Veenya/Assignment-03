@@ -6,9 +6,6 @@
 class PotentiometerImpl : public Potentiometer {
 public:
     PotentiometerImpl(int pin, int tolerance);
-    virtual ~PotentiometerImpl();
-
-    void sync() override;
 
     // Ritorna posizione normalizzata (in base ai define nel config.h)
     unsigned int getPosition();

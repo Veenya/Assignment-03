@@ -5,7 +5,6 @@
 CommunicationCenter::CommunicationCenter(Controller* sys) : pController(sys) {}
 
 void CommunicationCenter::init() {
-    // flags for tasks (optional)
     newModeCmd = false;
     newValveCmd = false;
 
@@ -13,6 +12,7 @@ void CommunicationCenter::init() {
     lastRxMs = 0;
     // T2 timeout (ms) - set from config.h if you want
     T2_MS = 15000;
+    Serial.println("Communication Center initialized");
 }
 
 void CommunicationCenter::notifyNewState() {

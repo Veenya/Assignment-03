@@ -24,7 +24,7 @@ public:
     LiquidCrystal_I2C* getLcd();
 
     // Bottone di toggle modalita' auto/manual
-    ButtonImpl* getToggleButton();
+    ButtonImpl* getButton();
 
     // Potenziometro che serve a controllare il motore se in manual mode
     PotentiometerImpl* getPotentiometer();

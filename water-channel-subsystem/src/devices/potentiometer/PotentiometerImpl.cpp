@@ -9,13 +9,6 @@ PotentiometerImpl::PotentiometerImpl(int pin, int tolerance)
     oldValue = analogRead(pin);
 }
 
-PotentiometerImpl::~PotentiometerImpl() {}
-
-void PotentiometerImpl::sync() {
-    // aggiorna timestamp (serve anche a evitare problemi di vtable)
-    updateSyncTime(millis());
-}
-
 unsigned int PotentiometerImpl::getPosition() {
     int raw = analogRead(pin);
 
@@ -25,7 +18,8 @@ unsigned int PotentiometerImpl::getPosition() {
 
     if (val < MIN_POTENTIOMETER) val = MIN_POTENTIOMETER;
     if (val > MAX_POTENTIOMETER) val = MAX_POTENTIOMETER;
-
+    Serial.print("PotentiometerImpl::getPosition ");
+    Serial.println(val);
     return (unsigned int)val;
 }
 

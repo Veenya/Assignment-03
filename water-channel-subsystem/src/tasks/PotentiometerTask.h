@@ -22,8 +22,6 @@ public:
     void tick();
 
 
-    void getPotentiometerLevel();
-
 private:
     HWPlatform* pHW;
     Controller* pController;

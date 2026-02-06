@@ -12,12 +12,17 @@ ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCo
     waterLevel(0.0f),
     valveOpening(0),
     lastButtonState(false)
-    {}
+    {
+        pServo = pHW->getMotor();
+        pPotentiometer = pHW->getPotentiometer();
+        pBtn = pHW->getButton();
+    }
 
 
 void ControllerTask::tick() {
+    Serial.println("Controller task tick");
     this->connectivityState = pController->getConnectivityState();
-    checkSystemState();
+    // checkSystemState();
     manageValve();
     updateDisplay();
 }
@@ -25,20 +30,18 @@ void ControllerTask::tick() {
 
 /* --------- Operator inputs --------- */
 bool ControllerTask::isModeButtonPressed() {
-    auto btn = pHW->getToggleButton();
-    if (!btn) return false;
-    btn->sync();
-    return btn->isClickedAndReset();
+    Serial.println("isModeButtonPressed inizio");
+
+    pBtn->sync();
+    // Serial.println("PostSync");
+    return pBtn->isClickedAndReset();
 }
 
 int ControllerTask::readManualValveFromPot() {
-    auto pot = pHW->getPotentiometer();
-    if (!pot) return 0;
-
-    pot->sync();
+    pPotentiometer->sync();
 
     // Your PotentiometerImpl::position() should already be 0..100
-    int percent = (int)pot->getPosition();
+    int percent = (int)pPotentiometer->getPosition();
     return pController->clampPercent(percent);
 }
 
@@ -67,11 +70,16 @@ int ControllerTask::percentToServoAngle(int percent) const {
 
 void ControllerTask::checkSystemState() {
     // entrami sono check and reset del flag
+    Serial.println("checkSystemState");
+    // isModeButtonPressed();
     if (isModeButtonPressed()) {
+    // if (1) {
+        Serial.println("check if pressed");
         pController->setSystemState(SystemState::MANUAL_LOCAL);
         this->systemState = SystemState::MANUAL_LOCAL;
     }
     if (pCommunicationCenter->checkAndResetNewModeCmd()) {
+        Serial.println("check if new cmd");
         this->systemState = pController->getSystemState();
     }
 }
@@ -89,13 +97,10 @@ void ControllerTask::manageValve() {
 }
 
 void ControllerTask::applyValveToServo() {
-    auto servo = pHW->getMotor();
-    if (!servo) return;
-
     // Safety: if UNCONNECTED, force closed
     int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
     int angle = percentToServoAngle(effectivePercent);
-    servo->setPosition(angle);
+    pServo->setPosition(angle);
 }
 
 

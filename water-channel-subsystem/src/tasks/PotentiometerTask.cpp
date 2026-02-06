@@ -7,6 +7,8 @@ PotentiometerTask::PotentiometerTask(Controller* pController) : pController(pCon
 }
 
 void PotentiometerTask::tick() {
+    // Serial.print("PotentiometerTask::tick ");
     potentiometerPosition = pPotentiometer->getPosition();
+    Serial.println(potentiometerPosition);
     pController->setPotentiometerPosition(potentiometerPosition);
 }

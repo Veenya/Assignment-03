@@ -14,9 +14,9 @@ HWPlatform* pHWPlatform;
 UserPanel* pUserPanel;
 Controller *pController;
 CommunicationCenter* pCommunicationCenter;
-ControllerTask* pControllerTask;
+Task* pControllerTask;
 Task* pCommunicationTask;
-PotentiometerTask* pPotentiometerTask;
+Task* pPotentiometerTask;
 
 void setup() {
     MsgService.init();
@@ -37,16 +37,19 @@ void setup() {
     pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
+    pPotentiometerTask = new PotentiometerTask(pController);
+    pPotentiometerTask->init(POTENTIOMETER_PERIOD);
+    
     pControllerTask = new ControllerTask(pController, pCommunicationCenter, pUserPanel); 
     pControllerTask->init(TANK_PERIOD);
 
-    pPotentiometerTask = new PotentiometerTask(pController);
-    pControllerTask->init(POTENTIOMETER_PERIOD);
-
     scheduler.addTask(pCommunicationTask);
+    scheduler.addTask(pPotentiometerTask);
     scheduler.addTask(pControllerTask);
 }
 
 void loop() {
     scheduler.schedule();
+    // pPotentiometerTask->tick();
+    Serial.println("Loop");
 }
