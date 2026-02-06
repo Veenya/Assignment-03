@@ -12,6 +12,23 @@ import org.mqttserver.policy.SystemController;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+//TODO
+/*
+
+5) Dashboard: espongo sia comando che feedback
+
+In /api/systemdata aggiungerei:
+
+valveValue = comando (già c’è)
+
+valveActual = feedback (nuovo)
+
+arduinoConnected (nuovo)
+
+Così vedi subito se Arduino sta seguendo i comandi.
+
+*/
+
 public class DataService extends AbstractVerticle {
 
     private final int port;
