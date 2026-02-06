@@ -18,6 +18,11 @@ import java.util.Map;
 // Non ha senso calcolarla dentro CUS: 
 // è la dashboard che decide “NOT_AVAILABLE” quando non riesce a fare HTTP verso CUS.
 
+/*
+È la parte “logica” del tuo progetto: tiene in memoria vari stati (es. manuale/automatico) e valori (WL).
+Qui dentro aggiorni WL quando arriva un messaggio dal sensore.
+ */
+
 public class SystemControllerImpl implements SystemController {
 
     // Spec thresholds

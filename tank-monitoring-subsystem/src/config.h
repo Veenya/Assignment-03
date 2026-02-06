@@ -4,7 +4,8 @@
 
 
 //! Impostare l'ip del pc
-#define DEFAULT_MQTT_SERVER  "192.168.1.98"
+//#define DEFAULT_MQTT_SERVER  "192.168.1.98"
+#define DEFAULT_MQTT_SERVER  "broker.mqtt-dashboard.com"
 
 #define ESP_BAUD             115200
 

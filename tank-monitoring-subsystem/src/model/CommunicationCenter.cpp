@@ -67,8 +67,9 @@ bool CommunicationCenter::checkMQTTConnection() {
 }
 
 void CommunicationCenter::notifyNewState() {
-    String message;
+    //String message;
     this->waterState = pController->getWaterState();
+    /*
     if (waterState == WaterState::Low) {
         message = "Low";
     } else if (waterState == WaterState::Medium) {
@@ -76,16 +77,26 @@ void CommunicationCenter::notifyNewState() {
     } else if (waterState == WaterState::High) {
         message = "High";
     }
+    */
+
+    //this->waterDistance = pController->getDistance();
+    //message = String(this->waterDistance);
+
+    // JSON
+    this->waterDistance = pController->getDistance();
+    String message = String("{\"WL\":") + String(this->waterDistance, 2) + "}";
+    pMQTTpublisher->publish(WL_TOPIC, message.c_str());
+
 
     if (pMQTTpublisher->connected()) {
         // const char* message = "Ciao dal test ESP32 - " __DATE__ " " __TIME__;
         //TODO: togliere
         mqttState = MQTTState::CONNECTED;
         pController->setMQTTState(MQTTState::CONNECTED);
-        Serial.print("Publish su " FREQ_TOPIC " → ");
+        Serial.print("Publish su " WL_TOPIC " → ");
         Serial.println(message);
 
-        pMQTTpublisher->publish(FREQ_TOPIC, message.c_str());  // metodo semplice
+        pMQTTpublisher->publish(WL_TOPIC, message.c_str());  // metodo semplice
         //c_str() restituisce un puntatore a const char*
         // publisher->publishJSON(...) altrimenti JSON
     } else {

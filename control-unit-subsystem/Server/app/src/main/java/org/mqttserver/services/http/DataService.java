@@ -7,7 +7,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import org.mqttserver.services.mqtt.Broker;
+import org.mqttserver.policy.SystemController;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -15,15 +15,14 @@ import java.util.Deque;
 public class DataService extends AbstractVerticle {
 
     private final int port;
-    private final Broker broker;
+    private final SystemController systemController;
 
-    // store last N WL samples for dashboard graph
     private final int MAX_HISTORY = 200;
     private final Deque<Float> wlHistory = new ArrayDeque<>(MAX_HISTORY);
 
-    public DataService(int port, Broker broker) {
+    public DataService(int port, SystemController systemController) {
         this.port = port;
-        this.broker = broker;
+        this.systemController = systemController;
     }
 
     @Override
@@ -31,19 +30,25 @@ public class DataService extends AbstractVerticle {
         Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
 
-        // Dashboard -> CUS
-        router.post("/api/mode").handler(this::handleSetMode);      // { "isManual": true/false }
-        router.post("/api/valve").handler(this::handleSetValve);    // { "valveValue": 0..100 } (only if MANUAL)
+        // Dashboard -> Java
+        router.post("/api/mode").handler(this::handleSetMode);
+        router.post("/api/valve").handler(this::handleSetValve);
 
-        // Dashboard <- CUS
+        // Dashboard <- Java
         router.get("/api/systemdata").handler(this::handleGetSystemData);
-        router.get("/api/wlhistory").handler(this::handleGetWlHistory); // ?n=50
+        router.get("/api/wlhistory").handler(this::handleGetWlHistory);
 
-        vertx.createHttpServer().requestHandler(router).listen(port);
-        System.out.println("HTTP Service ready on port: " + port);
+        vertx.createHttpServer()
+                .requestHandler(router)
+                .listen(port, ar -> {
+                    if (ar.succeeded()) {
+                        System.out.println("HTTP Service ready on port: " + port);
+                    } else {
+                        System.err.println("HTTP Service FAILED: " + ar.cause().getMessage());
+                    }
+                });
 
-        // Periodically capture WL for history (simple approach).
-        // If you already have WL updates elsewhere, you can push into history there instead.
+        // salva WL ogni secondo per grafico
         vertx.setPeriodic(1000, id -> recordWlSample());
     }
 
@@ -52,16 +57,16 @@ public class DataService extends AbstractVerticle {
         JsonObject body = ctx.body().asJsonObject();
 
         if (body == null || !body.containsKey("isManual")) {
-            sendError(400, response);
+            response.setStatusCode(400).end();
             return;
         }
 
         boolean isManual = body.getBoolean("isManual", false);
-        broker.getSystemController().setIsManual(isManual);
+        systemController.setIsManual(isManual);
 
-        // When switching back to automatic, manual valve command should not be used
+        // se torni in AUTO, invalida eventuale comando manuale
         if (!isManual) {
-            broker.getSystemController().setValveValueFromDashboard(-1);
+            systemController.setValveValueFromDashboard(-1);
         }
 
         response.setStatusCode(200).end();
@@ -72,33 +77,32 @@ public class DataService extends AbstractVerticle {
         JsonObject body = ctx.body().asJsonObject();
 
         if (body == null || !body.containsKey("valveValue")) {
-            sendError(400, response);
+            response.setStatusCode(400).end();
             return;
         }
 
         int valveValue = body.getInteger("valveValue", -1);
 
-        // Spec: valve can be controlled remotely only in MANUAL mode
-        if (!broker.getSystemController().getIsManual()) {
-            response.setStatusCode(409) // conflict with current mode
-                    .end("Valve can be set only in MANUAL mode");
+        // solo in MANUAL
+        if (!systemController.getIsManual()) {
+            response.setStatusCode(409).end("Valve can be set only in MANUAL mode");
             return;
         }
 
-        broker.getSystemController().setValveValueFromDashboard(valveValue);
+        systemController.setValveValueFromDashboard(valveValue);
         response.setStatusCode(200).end();
     }
 
     private void handleGetSystemData(RoutingContext ctx) {
-        JsonObject data = new JsonObject();
-        data.put("status", String.valueOf(broker.getSystemController().getStatus())); // as string
-        data.put("isManual", broker.getSystemController().getIsManual());
-        data.put("valveValue", broker.getSystemController().getValveValue());
-        data.put("wl", broker.getSystemController().getWl());
+        JsonObject data = new JsonObject()
+                .put("status", String.valueOf(systemController.getStatus()))
+                .put("isManual", systemController.getIsManual())
+                .put("valveValue", systemController.getValveValue())
+                .put("wl", systemController.getWl());
 
         ctx.response()
                 .putHeader("content-type", "application/json")
-                .end(data.encodePrettily());
+                .end(data.encode());
     }
 
     private void handleGetWlHistory(RoutingContext ctx) {
@@ -109,27 +113,18 @@ public class DataService extends AbstractVerticle {
         } catch (Exception ignored) {}
 
         JsonArray arr = new JsonArray();
-        // take last n elements
         Float[] values = wlHistory.toArray(new Float[0]);
         int start = Math.max(0, values.length - n);
-        for (int i = start; i < values.length; i++) {
-            arr.add(values[i]);
-        }
+        for (int i = start; i < values.length; i++) arr.add(values[i]);
 
         ctx.response()
                 .putHeader("content-type", "application/json")
-                .end(arr.encodePrettily());
+                .end(arr.encode());
     }
 
     private void recordWlSample() {
-        float wl = broker.getSystemController().getWl();
-        if (wlHistory.size() >= MAX_HISTORY) {
-            wlHistory.removeFirst();
-        }
+        float wl = systemController.getWl();
+        if (wlHistory.size() >= MAX_HISTORY) wlHistory.removeFirst();
         wlHistory.addLast(wl);
-    }
-
-    private void sendError(int statusCode, HttpServerResponse response) {
-        response.setStatusCode(statusCode).end();
     }
 }
