@@ -34,7 +34,7 @@ public:
     void sync();
 
     // Ritorna true se il bottone è attualmente premuto
-    bool isResetPressed() const;
+    // bool isResetPressed();
 
     // Ritorna true SOLO quando il bottone passa da "non premuto" a "premuto"
     // (fronte di salita). Utile per non reagire mille volte mentre è tenuto premuto.

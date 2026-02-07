@@ -83,9 +83,9 @@ void UserPanel::sync() {
     resetPressed = pResetButton->isPressed();
 }
 
-bool UserPanel::isResetPressed() const {
-    return resetPressed;
-}
+// bool UserPanel::isResetPressed() const {
+//     return resetPressed;
+// }
 
 bool UserPanel::isResetPressedEdge() {
     // fronte di salita: ora premuto, prima no

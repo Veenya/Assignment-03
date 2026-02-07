@@ -5,6 +5,7 @@
 CommunicationCenter::CommunicationCenter(Controller* sys) : pController(sys) {}
 
 void CommunicationCenter::init() {
+    lastSystemStateReceived = "MANUAL_LOCAL";
     newModeCmd = false;
     newValveCmd = false;
 
@@ -55,16 +56,21 @@ void CommunicationCenter::sync() {
             if (content == "PING") {
                 // nothing else to do
             } else if (content.startsWith("MODE,")) {
-                String m = content.substring(5);
+                String m = content.substring(13); // TODO rivedere
                 m.trim();
-                if (m == "MANUAL_LOCAL") {
+                if (m == lastSystemStateReceived) {
+                    //! SKIP, non fare nulla
+                } else if (m == "MANUAL_LOCAL") {
                     pController->setSystemState(SystemState::MANUAL_LOCAL);
+                    lastSystemStateReceived = "MANUAL_LOCAL";
                     newModeCmd = true;
                 } else if (m == "MANUAL_REMOTE") {
                     pController->setSystemState(SystemState::MANUAL_REMOTE);
+                    lastSystemStateReceived = "MANUAL_REMOTE";
                     newModeCmd = true;
                 } else if (m == "AUTO") {
                     pController->setSystemState(SystemState::AUTOMATIC);
+                    lastSystemStateReceived = "AUTO";
                     newModeCmd = true;
                 }
             } else if (content.startsWith("VALVE,")) {

@@ -40,6 +40,8 @@ public:
 
 private:
     Controller* pController;
+    String lastSystemStateReceived;
+
 
     bool newModeCmd;
     bool newValveCmd;
