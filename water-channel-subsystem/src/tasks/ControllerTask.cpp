@@ -66,16 +66,15 @@ void ControllerTask::refreshOutputs() {
 void ControllerTask::checkSystemState() {
     // entrambi sono check and reset del flag
     Serial.println("checkSystemState");
-    // isModeButtonPressed();
     if (pController->buttonCheckAndConsumeClick()) {
         Serial.println("check if pressed");
         pController->setSystemState(SystemState::MANUAL_LOCAL);
         this->systemState = SystemState::MANUAL_LOCAL;
     }
-    // if (pCommunicationCenter->checkAndResetNewModeCmd()) {
-    //     Serial.println("check if new cmd");
-    //     this->systemState = pController->getSystemState();
-    // }
+    if (pCommunicationCenter->checkAndResetNewModeCmd()) {
+        Serial.println("check if new cmd");
+        this->systemState = pController->getSystemState();
+    }
 }
 
 void ControllerTask::manageValve() {
