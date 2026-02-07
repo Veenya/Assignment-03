@@ -69,7 +69,7 @@ public class Main {
                         if (msg == null || msg.isBlank()) continue;
                         if (msg != null) System.out.println("SERIAL RX: " + msg);
 
-                        // Arduino deve mandare JSON valido e terminare con \n.
+                        // Arduino deve mandare JSON valido e terminare con \n.1
                         JsonObject rep = new JsonObject(msg); // msg deve essere JSON valido
 
                         // valveValue riportato da Arduino (feedback)
@@ -97,6 +97,8 @@ public class Main {
                         }
                         
                     }
+                    controller.updatePolicy();
+                    controller.updateConnectivity();
                     Thread.sleep(20);
                 } catch (Exception e) {
                     System.err.println("Serial RX error: " + e.getMessage());

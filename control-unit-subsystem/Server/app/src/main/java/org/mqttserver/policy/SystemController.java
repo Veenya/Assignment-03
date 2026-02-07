@@ -9,17 +9,7 @@ import java.util.Map;
 public interface SystemController {
 
     //TODO
-    /*
-    Dato che CUS e' il controllore/capo dei COMANDI e dello STATO LOGICO, aggiungere
-        desired/commanded J(deciso da CUS) -> isManual, status, valveCommand -> li abbiamo gia
-        e measured/reported (riportati da arduino) -> valveActual, arduinoMode, lastSerialSeenAt
 
-    aggiungere (feedback arduino)
-        valveActual (valore reale riportato)
-        isArduinoConnected / lastArduinoRxAt
-        opzionale: arduinoModeReported (solo per diagnostica)
-    
-    */
 
     /*
     
@@ -41,10 +31,13 @@ status = MANUAL, valveCommand = manualValveValue
     
     */
     void setWL(float wl);
+    //void setValveCommand(int val);
 
     Status getStatus();
     float getWl();
     int getValveValue();
+    //int getValveCommand();
+    
 
     void setValveValueFromDashboard(int valveValue);
     Map<Status, Integer> getStatusValveValue();
@@ -55,4 +48,5 @@ status = MANUAL, valveCommand = manualValveValue
     boolean getIsManual(); 
     
     void updateConnectivity();
+    void updatePolicy(); // Calcola status/valveCommand, da fare uando arriva wl
 }

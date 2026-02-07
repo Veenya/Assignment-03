@@ -61,54 +61,9 @@ public class SystemControllerImpl implements SystemController {
      */
     @Override
     public void setWL(float wl) {
-        long now = System.currentTimeMillis();
-
-        // mark "connected" activity
-        lastTmsSampleAtMs = now;
-
-        if (wl < 0) {
-            status = Status.INVALID_STATUS;
-            return;
-        }
-
         this.wl = wl;
-
-        // If manual, keep status MANUAL but we still update wl
-        if (isManual) {
-            status = Status.MANUAL;
-            // In manual mode we do not change valve automatically.
-            return;
-        }
-
-        // AUTOMATIC policy:
-        // - if wl >= L2 => open 100% immediately until wl < L2
-        // - else if wl > L1 for more than T1 => open 50% until wl <= L1
-        // - else closed (0%)
-
-        if (wl >= L2) {
-            status = Status.AUTO_OPEN_100;
-            // reset the L1 timer because we're in the L2 condition
-            aboveL1SinceMs = null;
-            return;
-        }
-
-        // wl < L2 from here
-
-        if (wl > L1) {
-            if (aboveL1SinceMs == null) {
-                aboveL1SinceMs = now; // start timing above L1
-            }
-            if (now - aboveL1SinceMs >= T1_MS) {
-                status = Status.AUTO_OPEN_50;
-            } else {
-                // Not yet above L1 for T1 -> still closed
-                status = Status.AUTO_CLOSED;
-            }
-        } else {
-            // wl <= L1 => close and reset timer
-            status = Status.AUTO_CLOSED;
-            aboveL1SinceMs = null;
-        }
+        this.lastTmsSampleAtMs = System.currentTimeMillis();
+        updatePolicy();
     }
 
     /**
@@ -139,6 +94,65 @@ public class SystemControllerImpl implements SystemController {
         }
     }
 
+
+    public synchronized void updateConnectivityOnly() {
+        long now = System.currentTimeMillis();
+        if (lastTmsSampleAtMs == 0L || (now - lastTmsSampleAtMs) > T2_MS) {
+            status = Status.UNCONNECTED;
+        } else if (status == Status.UNCONNECTED) {
+            status = isManual ? Status.MANUAL : Status.AUTO_CLOSED;
+        }
+    }
+
+
+    /**
+     * Policy update that accounts for:
+     * - MANUAL vs AUTOMATIC
+     * - UNCONNECTED if no WL data for > T2
+     * - AUTO valve states based on WL thresholds and T1 timing
+     *
+     * Call periodically (e.g., every 200ms/500ms) AND/OR after setWL().
+     */
+    @Override
+    public void updatePolicy() {
+        long now = System.currentTimeMillis();
+
+        // Connectivity (UNCONNECTED if no samples for T2)
+        if (lastTmsSampleAtMs == 0L || (now - lastTmsSampleAtMs) > T2_MS) {
+            status = Status.UNCONNECTED;
+            return;
+        }
+
+        // Manual mode overrides auto substates
+        if (isManual) {
+            status = Status.MANUAL;
+            return;
+        }
+
+        // Validate WL
+        if (wl < 0f) {
+            status = Status.INVALID_STATUS;
+            return;
+        }
+
+        // AUTO policy
+        if (wl > L1) {
+            if (aboveL1SinceMs == null) {
+                aboveL1SinceMs = now; // start timing above L1
+            }
+            if (now - aboveL1SinceMs >= T1_MS) {
+                status = Status.AUTO_OPEN_50;
+            } else {
+                status = Status.AUTO_CLOSED; // not yet above l1 for t1
+            }
+        } else {
+            // WL <= L1 => closed and reset timer
+            status = Status.AUTO_CLOSED;
+            aboveL1SinceMs = null;
+        }
+
+    }
+
     @Override
     public Status getStatus() {
         return status;
@@ -164,6 +178,9 @@ public class SystemControllerImpl implements SystemController {
         // In spec, this is only meaningful in MANUAL mode
         this.manualValveValue = clampPercent(valveValue);
     }
+
+
+
 
     @Override
     public Map<Status, Integer> getStatusValveValue() {
@@ -191,13 +208,8 @@ public class SystemControllerImpl implements SystemController {
     @Override
     public void setIsManual(boolean isManual) {
         this.isManual = isManual;
-        if (isManual) {
-            status = Status.MANUAL;
-        } else {
-            // return to automatic state (re-evaluate using last wl)
-            aboveL1SinceMs = null;
-            setWL(this.wl);
-        }
+        // Quando cambi mode riallinea la valvola
+        updatePolicy();
     }
 
     @Override
