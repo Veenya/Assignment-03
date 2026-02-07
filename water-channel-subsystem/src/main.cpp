@@ -49,6 +49,7 @@ void setup() {
 }
 
 void loop() {
+    pController->syncButton();
     scheduler.schedule();
-    // Serial.println("Loop");
+    Serial.println("Loop");
 }

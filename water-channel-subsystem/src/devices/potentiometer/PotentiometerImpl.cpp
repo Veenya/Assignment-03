@@ -18,8 +18,8 @@ unsigned int PotentiometerImpl::getPosition() {
 
     if (val < MIN_POTENTIOMETER) val = MIN_POTENTIOMETER;
     if (val > MAX_POTENTIOMETER) val = MAX_POTENTIOMETER;
-    Serial.print("PotentiometerImpl::getPosition ");
-    Serial.println(val);
+    // Serial.print("PotentiometerImpl::getPosition ");
+    // Serial.println(val);
     return (unsigned int)val;
 }
 

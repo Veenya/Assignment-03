@@ -23,10 +23,6 @@ public:
     /* --------- Mode & connectivity --------- */
     void setSystemState(SystemState systemMode);
     SystemState getSystemState() const;
-
-    void toggleMode();
-
-    void setConnectivity(ConnectivityState state);
     ConnectivityState getConnectivity() const;
 
     bool isManual() const;
@@ -49,6 +45,7 @@ public:
     /* --------- Outputs --------- */
     void updateDisplay();
     void refreshOutputs();           // applyValveToServo + updateDisplay
+    void setConnectivityState(ConnectivityState connectivityState);
 
 private:
     HWPlatform* pHW;
@@ -64,7 +61,6 @@ private:
     float waterLevel;
     int valveOpening;
     bool lastButtonState;
-    int percentToServoAngle(int percent) const;
     void checkSystemState();
     void manageValve();
 };

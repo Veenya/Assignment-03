@@ -5,7 +5,6 @@ class Button {
 public:
     Button();
     virtual bool isPressed() = 0;
-    virtual bool isClickedAndReset() = 0;
     virtual void sync();
     long getLastSynchTime();
 

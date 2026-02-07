@@ -13,7 +13,7 @@ Controller::Controller(HWPlatform* hw)
     systemState(SystemState::MANUAL_LOCAL),
     connectivityState(ConnectivityState::UNCONNECTED),
     waterLevel(0.0f),
-    valveOpeningPercent(0),
+    valveOpening(0),
     lastButtonState(false) {}
 
 void Controller::init() {
@@ -47,15 +47,6 @@ SystemState Controller::getSystemState() {
     return systemState;
 }
 
-void Controller::setConnectivity(ConnectivityState connectivityState) {
-    connectivityState = connectivityState;
-
-    // Safety behavior: if UNCONNECTED, close valve
-    if (connectivityState == ConnectivityState::UNCONNECTED) {
-        setValveOpening(0);
-    }
-}
-
 ConnectivityState Controller::getConnectivity() {
     return connectivityState;
 }
@@ -85,8 +76,8 @@ float Controller::getWaterLevel() {
 
 /* --------- Valve control --------- */
 
-void Controller::setValveOpening(int percent) {
-    valveOpeningPercent = clampPercent(percent);
+void Controller::setValveOpening(int valveOpening) {
+    this->valveOpening = valveOpening;
 }
 
 HWPlatform* Controller::getHWPlatform() {
@@ -95,6 +86,19 @@ HWPlatform* Controller::getHWPlatform() {
 
 void Controller::moveMotor(int angle) {
     pServo->setPosition(angle);
+}
+
+void Controller::syncButton() {
+    this->pBtn->sync();
+}
+
+bool Controller::buttonCheckAndConsumeClick() {
+    Serial.print("Controller::buttonCheckAndConsumeClick ");
+    bool clicked = this->pBtn->checkAndConsumeClick();
+    Serial.println(clicked);
+    
+    return clicked;
+    // return this->pBtn->checkAndConsumeClick();
 }
 
 void Controller::setSystemState(SystemState systemState) {
@@ -108,37 +112,28 @@ void Controller::setConnectivityState(ConnectivityState connectivityState) {
     this->connectivityState = connectivityState;
 }
 
-void Controller::setPotentiometerPosition(float potentiometerPosition) {
+void Controller::setPotentiometerPosition(int potentiometerPosition) {
     this->potentiometerPosition = potentiometerPosition;
 }; 
 
 
 void Controller::applyValveToServo() {
     // If UNCONNECTED, force closed (spec safety)
-    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpeningPercent;
+    int effectivePercent = (systemState != SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
     int angle = percentToServoAngle(effectivePercent);
     pServo->setPosition(angle);
 }
-
-/* --------- Operator inputs --------- */
-
-// bool Controller::isModeButtonPressed() {
-//     pBtn->sync();
-//     bool current = pBtn->isPressed();
-
-//     // rising edge detect
-//     bool pressedEdge = (current && !lastButtonState);
-//     lastButtonState = current;
-//     return pressedEdge;
-// }
 
 float Controller::getPotentiometerPosition() {
     return this->potentiometerPosition;
 }
 
+// per ora valveOpening e potentiometerPosition sono la stessa cosa
 int Controller::getValveOpening() {
-    return clampPercent(map(potentiometerPosition, 0, 1023, 0, 100));
+    return valveOpening;
 }
+
+
 
 /* --------- helpers --------- */
 

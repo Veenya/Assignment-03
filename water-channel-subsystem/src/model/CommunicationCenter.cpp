@@ -20,6 +20,10 @@ void CommunicationCenter::notifyNewState() {
     String systemStateStr;
     String connectionStateStr;
     int valveOpening = pController->getValveOpening();
+    Serial.print("CommunicationCenter::notifyNewState ");
+    Serial.print(valveOpening);
+    Serial.print(" -> ");
+    Serial.println(String(valveOpening));
     
     if (pController->getSystemState() == SystemState::MANUAL_LOCAL) {
         systemStateStr = "MANUAL_LOCAL";
@@ -46,7 +50,7 @@ void CommunicationCenter::sync() {
             String content = msg->getContent();
             // Any valid message means CUS is reachable -> CONNECTED
             lastRxMs = millis();
-            pController->setConnectivity(ConnectivityState::CONNECTED);
+            pController->setConnectivityState(ConnectivityState::CONNECTED);
 
             if (content == "PING") {
                 // nothing else to do
@@ -83,11 +87,9 @@ void CommunicationCenter::sync() {
 
     // 2) Connectivity timeout -> UNCONNECTED (spec-like)
     unsigned long now = millis();
-    if (lastRxMs == 0) {
+    if (lastRxMs == 0 || now - lastRxMs > T2_MS) {
         // never received anything yet
-        pController->setConnectivity(ConnectivityState::UNCONNECTED);
-    } else if (now - lastRxMs > T2_MS) {
-        pController->setConnectivity(ConnectivityState::UNCONNECTED);
+        pController->setConnectivityState(ConnectivityState::UNCONNECTED);
     }
 }
 

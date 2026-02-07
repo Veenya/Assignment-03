@@ -14,29 +14,27 @@ ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCo
     valveOpening(0),
     lastButtonState(false)
     {
-        pServo = pHW->getMotor();
-        pPotentiometer = pHW->getPotentiometer();
-        pBtn = pHW->getButton();
+        // pServo = pHW->getMotor();
+        // pPotentiometer = pHW->getPotentiometer();
+        // pBtn = pHW->getButton();
     }
 
 
 void ControllerTask::tick() {
     Serial.println("Controller task tick");
     this->connectivityState = pController->getConnectivityState();
-    // checkSystemState();
+    checkSystemState();
     manageValve();
     updateDisplay();
 }
 
 
 /* --------- Operator inputs --------- */
-bool ControllerTask::isModeButtonPressed() {
-    Serial.println("isModeButtonPressed inizio");
-
-    pBtn->sync();
-    // Serial.println("PostSync");
-    return pBtn->isClickedAndReset();
-}
+// bool ControllerTask::isModeButtonPressed() {
+//     Serial.println("isModeButtonPressed inizio");
+//     delay(1000);
+//     return pController->buttonCheckAndConsumeClick();
+// }
 
 int ControllerTask::readManualValveFromPot() {
     pPotentiometer->sync();
@@ -65,20 +63,15 @@ void ControllerTask::refreshOutputs() {
     updateDisplay();
 }
 
-int ControllerTask::percentToServoAngle(int percent) const {
-    return map(percent, 0, 100, 0, 90);
-}
-
 void ControllerTask::checkSystemState() {
-    // entrami sono check and reset del flag
+    // entrambi sono check and reset del flag
     Serial.println("checkSystemState");
     // isModeButtonPressed();
-    // if (isModeButtonPressed()) {
-    // // if (1) {
-    //     Serial.println("check if pressed");
-    //     pController->setSystemState(SystemState::MANUAL_LOCAL);
-    //     this->systemState = SystemState::MANUAL_LOCAL;
-    // }
+    if (pController->buttonCheckAndConsumeClick()) {
+        Serial.println("check if pressed");
+        pController->setSystemState(SystemState::MANUAL_LOCAL);
+        this->systemState = SystemState::MANUAL_LOCAL;
+    }
     // if (pCommunicationCenter->checkAndResetNewModeCmd()) {
     //     Serial.println("check if new cmd");
     //     this->systemState = pController->getSystemState();
@@ -86,13 +79,19 @@ void ControllerTask::checkSystemState() {
 }
 
 void ControllerTask::manageValve() {
+    Serial.print("ControllerTask::manageValve ");
+    Serial.print(pController->getPotentiometerPosition());
+    Serial.print(" -> ");
     if (systemState == SystemState::MANUAL_LOCAL) {
-        setValveOpening(pController->getPotentiometerPosition());
-    } else if (connectivityState == ConnectivityState::UNCONNECTED) { // se disconnesso chiudo
+        int valvePercent = pController->getPotentiometerPosition();
+        setValveOpening(valvePercent);
+        pController->setValveOpening(valvePercent);
+    } else if (systemState != SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::UNCONNECTED) { // se disconnesso chiudo
         setValveOpening(0);
     } else if (connectivityState == ConnectivityState::CONNECTED) {
         setValveOpening(pController->getValveOpening());
     }
+    Serial.println(pController->getValveOpening());
     applyValveToServo();
 }
 
@@ -100,10 +99,14 @@ void ControllerTask::applyValveToServo() {
     // Safety: if UNCONNECTED, force closed
     Serial.print("ControllerTask::applyValveToServo ");
     Serial.print(valveOpening);
-    int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
-    // int effectivePercent = valveOpening;
+    int effectivePercent;
+    if (systemState != SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::UNCONNECTED) {
+        effectivePercent = 0;
+    } else {
+        effectivePercent = valveOpening;
+    }
     Serial.print(" -> ");
-    int angle = percentToServoAngle(effectivePercent);
+    int angle = pController->percentToServoAngle(effectivePercent);
     Serial.println(angle);
     pController->moveMotor(angle);
 }
@@ -118,13 +121,8 @@ SystemState ControllerTask::getSystemState() const {
     return systemState;
 }
 
-void ControllerTask::setConnectivity(ConnectivityState s) {
-    connectivityState = s;
-
-    // Safety: if UNCONNECTED, close valve
-    if (connectivityState == ConnectivityState::UNCONNECTED) {
-        setValveOpening(0);
-    }
+void ControllerTask::setConnectivityState(ConnectivityState connectivityState) {
+    connectivityState = connectivityState;
 }
 
 ConnectivityState ControllerTask::getConnectivity() const {
@@ -152,7 +150,7 @@ float ControllerTask::getWaterLevel() const {
 /* --------- Valve control --------- */
 
 void ControllerTask::setValveOpening(int percent) {
-    valveOpening = pController->clampPercent(percent);
+    valveOpening = percent;
 }
 
 int ControllerTask::getValveOpening() const {

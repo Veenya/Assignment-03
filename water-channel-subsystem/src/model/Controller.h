@@ -29,14 +29,14 @@ public:
     /* --------- Mode & connectivity --------- */
     void setSystemState(SystemState systemState);
     SystemState getSystemState();
-
-    void setConnectivity(ConnectivityState state);
     ConnectivityState getConnectivity();
 
     bool isManualRemote();
     bool isManualLocal();
     bool isUnconnected();
     void moveMotor(int angle);
+    void syncButton();
+    bool buttonCheckAndConsumeClick();
 
     /* --------- Water level (from CUS -> WCS for display) ---------
      * On WCS you may show WL on LCD if CUS sends it.
@@ -47,31 +47,22 @@ public:
 
     /* --------- Valve control --------- */
     // Commanded valve opening in percentage [0..100]
-    void setValveOpening(int percent);
+    void setValveOpening(int valveOpening);
 
     // Apply the commanded opening to the servo (0°..90°)
     void applyValveToServo();
 
-    /* --------- Operator inputs (WCS local panel) --------- */
-    // Button toggles MANUAL/AUTOMATIC (edge detection is usually in FSM/task)
-    // bool isModeButtonPressed();
-
-    // Potentiometer reading mapped to 0..100 (used only in MANUAL)
     int getValveOpening();
 
-    /* --------- Outputs --------- */
-    // LCD shows: valve%, mode (AUTO/MANUAL) or UNCONNECTED
-    void updateDisplay();
-
-    void setPotentiometerPosition(float potentiometerPosition); 
+    void setPotentiometerPosition(int potentiometerPosition); 
     float getPotentiometerPosition();
     HWPlatform* getHWPlatform();
     ConnectivityState getConnectivityState();
     void setConnectivityState(ConnectivityState connectivityState);
     int clampPercent(int v);
+    int percentToServoAngle(int percent);
 
 private:
-    int percentToServoAngle(int percent);
     HWPlatform* pHW;
     SystemState systemState; 
     ConnectivityState connectivityState;
@@ -79,9 +70,9 @@ private:
     ButtonImpl* pBtn;
     
     float waterLevel;                // last WL known (optional, for LCD)
-    int valveOpeningPercent;                // 0..100 commanded/current
-    bool lastButtonState;
     float potentiometerPosition;
+    int valveOpening;
+    bool lastButtonState;
 };
 
 #endif
