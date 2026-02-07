@@ -2,18 +2,18 @@
 #define __POTENTIOMETER_IMPL__
 
 #include "Potentiometer.h"
-#include "config.h"
 
 class PotentiometerImpl : public Potentiometer {
 public:
     PotentiometerImpl(int pin, int tolerance);
-    void sync() override;
-    long getLastSynchTime();
-    unsigned int position();
+
+    // Ritorna posizione normalizzata (in base ai define nel config.h)
+    unsigned int getPosition();
+
+    // True se il pot è cambiato più di "tolerance"
     bool moved();
 
 private:
-    long lastTimeSync;
     int pin;
     int tolerance;
     int oldValue;

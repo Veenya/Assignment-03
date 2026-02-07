@@ -7,13 +7,16 @@ class ButtonImpl : public Button {
 public:
     ButtonImpl(int pin);
     bool isPressed() override;
-    bool isClicked() override;
     void sync() override;
+    bool checkAndConsumeClick();
+    bool hasPendingClick();
+    void debugPrint();
 
 private:
     int pin;
     bool pressed;
     bool clicked;
+    unsigned long lastSyncTime;
 };
 
 #endif

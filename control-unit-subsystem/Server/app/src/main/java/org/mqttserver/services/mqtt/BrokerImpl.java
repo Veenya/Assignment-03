@@ -2,7 +2,7 @@ package org.mqttserver.services.mqtt;
 
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
+//import io.vertx.core.buffer.Buffer;
 import io.vertx.mqtt.MqttEndpoint;
 import io.vertx.mqtt.MqttServer;
 

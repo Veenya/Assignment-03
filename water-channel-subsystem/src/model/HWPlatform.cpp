@@ -7,9 +7,9 @@
 void wakeUp() {}
 
 HWPlatform::HWPlatform() {
-    pDoorMotor = new ServoMotorImpl(SERVO_PIN);
+    pMotor = new ServoMotorImpl(SERVO_PIN);
     pLcd = new LiquidCrystal_I2C(LCD_ADDR, 16, 2);
-    pResetButton = new ButtonImpl(BUTTON_PIN);
+    pButton = new ButtonImpl(BUTTON_PIN);
     pPotentiometer = new PotentiometerImpl(POTENTIOMETER_PIN, POTENTIOMETER_TOLERANCE);
     Serial.println("HWPlatform istanziata");
 }
@@ -17,7 +17,25 @@ HWPlatform::HWPlatform() {
 void HWPlatform::init() {
     pLcd->init();
     pLcd->backlight();
+    pLcd->clear();
     Serial.println("HWPlatform inizializzata");
 }
 
+// --- getters ---
+
+ServoMotorImpl* HWPlatform::getMotor() {
+    return pMotor;
+}
+
+ButtonImpl* HWPlatform::getButton() {
+    return pButton;
+}
+
+PotentiometerImpl* HWPlatform::getPotentiometer() {
+    return pPotentiometer;
+}
+
+LiquidCrystal_I2C* HWPlatform::getLcd() {
+    return pLcd;
+}
 

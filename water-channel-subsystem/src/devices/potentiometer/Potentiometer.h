@@ -4,15 +4,16 @@
 class Potentiometer {
 public:
     Potentiometer();
-    // virtual bool isPressed() = 0;
-    // virtual bool isClicked() = 0;
+    virtual ~Potentiometer();
+
+    // “tick” opzionale: la base non fa nulla
     virtual void sync();
-    long getLastSynchTime();
+
+    long getLastSynchTime() const;
 
 protected:
-    virtual void updateSyncTime(long time);
+    void updateSyncTime(long time);
 
-private:
     long lastTimeSync;
 };
 

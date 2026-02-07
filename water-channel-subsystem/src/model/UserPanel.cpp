@@ -1,90 +1,83 @@
-// water-channel-subsystem/src/model/UserPanel.cpp
 #include "UserPanel.h"
-#include <Arduino.h>
 #include "config.h"
 
 UserPanel::UserPanel(HWPlatform* pHW)
-    : pHW(pHW),
-      pResetButton(nullptr),
-      pLcd(nullptr),
-      resetPressed(false),
-      prevResetPressed(false) {
-    // prendi risorse hardware dalla piattaforma
-    if (this->pHW) {
-        pResetButton = this->pHW->getResetButton();
-        pLcd = this->pHW->getLcd();
+    : pHW(pHW), pResetButton(nullptr), resetPressed(false), prevResetPressed(false) {
+    if (pHW) {
+        pResetButton = pHW->getButton();
+        pLcd = pHW->getLcd();
     }
 }
 
 void UserPanel::init() {
     resetPressed = false;
     prevResetPressed = false;
-
-    if (pLcd) {
-        pLcd->init();
-        pLcd->backlight();
-        pLcd->clear();
-        pLcd->display();
-    }
+    pLcd->init();
+    pLcd->backlight();
+    pLcd->noDisplay();
+    turnOnDisplay();
 }
 
 void UserPanel::turnOnDisplay() {
-    if (!pLcd) return;
     pLcd->display();
     pLcd->clear();
 }
 
 void UserPanel::turnOffDisplay() {
-    if (!pLcd) return;
     pLcd->noDisplay();
 }
 
 void UserPanel::displayOpeningLevel(float val) {
-    if (!pLcd) return;
-    pLcd->setCursor(0, 1);
-    pLcd->print("                "); // 16 spazi
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 1);
     pLcd->print("VALVE:");
-    pLcd->print(val, 1); // 1 decimale
+    pLcd->print(val, 1); //1 decimale
     pLcd->print("%");
 }
 
 void UserPanel::displayAutomatic() {
-    if (!pLcd) return;
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("                "); // 16 spazi
-    pLcd->setCursor(0, 0);
-    pLcd->print("AUTOMATIC");
+    pLcd->print("AUTOMATIC"); 
 }
 
-void UserPanel::displayManual() {
-    if (!pLcd) return;
+void UserPanel::displayManualLocal() {
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("                "); // 16 spazi
+    pLcd->print("MANUAL_LOCAL)"); 
+}
+
+void UserPanel::displayManualRemote() {
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("MANUAL");
+    pLcd->print("MANUAL_REMOTE)"); 
 }
 
 void UserPanel::displayUnconnected() {
-    if (!pLcd) return;
+    pLcd->print("                "); // 16 spazi al posto di clear
     pLcd->setCursor(0, 0);
-    pLcd->print("                "); // 16 spazi
-    pLcd->setCursor(0, 0);
-    pLcd->print("UNCONNECTED");
+    pLcd->print("UNCONNECTED"); 
+}
+
+void UserPanel::displayWaterLevel(int waterLevel) {
+    pLcd->setCursor(0, 1);
+    pLcd->print("WL:");
+    pLcd->print(waterLevel, 1);
+    pLcd->print("       ");
 }
 
 void UserPanel::prepareToSleep() {
-    if (!pLcd) return;
     pLcd->noDisplay();
 }
 
 void UserPanel::resumeFromSleeping() {
-    if (!pLcd) return;
     pLcd->display();
 }
 
 void UserPanel::sync() {
-    if (!pResetButton) return;
+    if (!pResetButton) {
+        return;
+    }
 
     prevResetPressed = resetPressed;
     resetPressed = pResetButton->isPressed();
@@ -94,7 +87,7 @@ bool UserPanel::isResetPressed() const {
     return resetPressed;
 }
 
-bool UserPanel::isResetPressedEdge() const {
+bool UserPanel::isResetPressedEdge() {
     // fronte di salita: ora premuto, prima no
     return (resetPressed && !prevResetPressed);
 }

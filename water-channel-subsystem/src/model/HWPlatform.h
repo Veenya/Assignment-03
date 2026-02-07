@@ -5,7 +5,7 @@
 #include "config.h"  // pins
 
 #include "devices/button/ButtonImpl.h"              // button
-#include "devices/servo_motor/servo_motor.h"        // servo motor
+#include "devices/servo_motor/servo_motor_impl.h"        // servo motor
 #include "devices/potentiometer/PotentiometerImpl.h"        // potentiometer
 
 #include <LiquidCrystal_I2C.h>  // LCD screen
@@ -16,24 +16,25 @@ public:
     HWPlatform();
 
     void init();  // inizializza tutto l'hardware (lcd, pins, ecc.)
-    void test();  // inizializza i test
 
-    /* ---------------------------------- ACCESSO AI DEVICE ---------------------------------- */
-
-    // Motore porta hangar
-    ServoMotor* getHangarDoorMotor();
+    // Motore della valvola
+    ServoMotorImpl* getMotor();
 
     // LCD dell’operatore
     LiquidCrystal_I2C* getLcd();
 
-    // Bottone di reset allarme
-    ButtonImpl* getResetButton();
+    // Bottone di toggle modalita' auto/manual
+    ButtonImpl* getButton();
+
+    // Potenziometro che serve a controllare il motore se in manual mode
+    PotentiometerImpl* getPotentiometer();
+    HWPlatform* getHWPlatform();
 
 private:
     // istanze concrete dei device
-    ServoMotor* pDoorMotor;
+    ServoMotorImpl* pMotor;
     LiquidCrystal_I2C* pLcd;
-    ButtonImpl* pResetButton;
+    ButtonImpl* pButton;
     PotentiometerImpl* pPotentiometer;
 };
 

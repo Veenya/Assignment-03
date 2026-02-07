@@ -1,49 +1,55 @@
 #include <Arduino.h>
 #include "config.h"
-#include "kernel/Logger.h"
 #include "kernel/MsgService.h"
 #include "kernel/Scheduler.h"
 #include "model/CommunicationCenter.h"
 #include "model/HWPlatform.h"
 #include "model/UserPanel.h"
 #include "tasks/CommunicationTask.h"
+#include "tasks/PotentiometerTask.h"
+#include "tasks/ControllerTask.h"
 
 Scheduler scheduler;
 HWPlatform* pHWPlatform;
-// UserPanel* pUserPanel;
-// Hangar* pHangar;
-// CommunicationCenter* pCommunicationCenter;
+UserPanel* pUserPanel;
+Controller *pController;
+CommunicationCenter* pCommunicationCenter;
+Task* pControllerTask;
+Task* pCommunicationTask;
+Task* pPotentiometerTask;
 
 void setup() {
-    // MsgService.init();
+    MsgService.init();
     scheduler.init(SCHEDULER_PERIOD);
-    // Logger.log(":::::: Drone Hangar ::::::");
+
     pHWPlatform = new HWPlatform();
     pHWPlatform->init();
 
-    // pUserPanel = new UserPanel(pHWPlatform);
-    // pUserPanel->init();
+    pUserPanel = new UserPanel(pHWPlatform);
+    pUserPanel->init();
 
-    // pHangar = new Hangar(pHWPlatform);
-    // pHangar->init();
+    pController = new Controller(pHWPlatform);
+    pController->init();
 
-    // pCommunicationCenter = new CommunicationCenter(pHangar);
-    // pCommunicationCenter->init();
+    pCommunicationCenter = new CommunicationCenter(pController);
+    pCommunicationCenter->init();
 
-    // Task* pCommunicationTask = new CommunicationTask(pCommunicationCenter, pHangar);
-    // pCommunicationTask->init(COMMUNICATION_PERIOD);
+    pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
+    pCommunicationTask->init(COMMUNICATION_PERIOD);
 
-    // Task* pHangarTask = new HangarTask(pCommunicationCenter, pHangar, pUserPanel);
-    // pHangarTask->init(DOOR_TASK);
+    pPotentiometerTask = new PotentiometerTask(pController);
+    pPotentiometerTask->init(POTENTIOMETER_PERIOD);
+    
+    pControllerTask = new ControllerTask(pController, pCommunicationCenter, pUserPanel); 
+    pControllerTask->init(CONTROLLER_PERIOD);
 
-    // Task* pTemperatureTask = new TemperatureTask(pHangar, pUserPanel);
-    // pTemperatureTask->init(TEMPERATURE_TASK);
-
-    // scheduler.addTask(pCommunicationTask);
-    // scheduler.addTask(pHangarTask);
-    // scheduler.addTask(pTemperatureTask);
+    scheduler.addTask(pCommunicationTask);
+    scheduler.addTask(pPotentiometerTask);
+    scheduler.addTask(pControllerTask);
 }
 
 void loop() {
-    // scheduler.schedule();
+    pController->syncButton();
+    scheduler.schedule();
+    Serial.println("Loop");
 }

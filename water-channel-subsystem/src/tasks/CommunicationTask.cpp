@@ -1,11 +1,12 @@
 #include "CommunicationTask.h"
 #include <Arduino.h>
 #include "config.h"
-#include "kernel/Logger.h"
 
-CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Hangar* pHangar)
-    : pCommunicationCenter(pCommunicationCenter), pHangar(pHangar) {
-    setState(DroneState::NORMAL);
+CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController)
+    : 
+    pCommunicationCenter(pCommunicationCenter), 
+    pController(pController) {
+        setState(SystemState::MANUAL_LOCAL);
 }
 
 void CommunicationTask::tick() {
@@ -24,7 +25,7 @@ void CommunicationTask::tick() {
     }
 }
 
-void CommunicationTask::setState(DroneState state) {
+void CommunicationTask::setState(SystemState state) {
     this->state = state;
     stateTimestamp = millis();
     justEntered = true;

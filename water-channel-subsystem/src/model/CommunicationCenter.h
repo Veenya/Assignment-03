@@ -3,44 +3,49 @@
 
 #include "HWPlatform.h"
 #include "config.h"
-#include "model/Hangar.h"
+#include "model/Controller.h"
 
 /*
- * Classe che comunica con il con il DRU (Drone Remote Unit) sul PC.
- * - Riceve comandi testuali via seriale (TAKEOFF, LANDING, RESET).
- * - Espone metodi "checkAndReset..." per i Task.
- * - Invia periodicamente lo stato corrente al DRU.
+ * Serial link between WCS (Arduino) and CUS (PC).
+ *
+ * Responsibilities:
+ * - Read commands from CUS:
+ *   - SET_MODE AUTO|MANUAL
+ *   - SET_VALVE <0..100>
+ *   - (optional) SET_WL <float>   // for LCD display
+ *   - (optional) PING / HEARTBEAT
+ *
+ * - Send status to CUS:
+ *   - STATUS <mode> <conn> <valve> <wl>
+ *   - (optional) EVENT MODE_TOGGLED <mode>
+ *
+ * - Track connectivity: if no valid command for T2 -> UNCONNECTED.
  */
+
 class CommunicationCenter {
 public:
-    CommunicationCenter(Hangar* pHangar);
+    explicit CommunicationCenter(Controller* sys);
 
     void init();
 
+    // Send current state to CUS
     void notifyNewState();
 
-    bool checkAndResetOpenDoorRequest();
-    bool checkAndResetTakeOffRequest();
-    bool checkTakeOffRequest();
-    bool checkAndResetLandingRequest();
-    bool checkLandingRequest();
-    bool checkAndResetAlarmRequest();
-    bool notifyAlarm();
-
+    // Read messages from CUS + update UNCONNECTED based on timeout
     void sync();
 
+    // Optional flags for tasks
+    bool checkAndResetNewModeCmd();
+    bool checkAndResetNewValveCmd();
+
 private:
-    Hangar* pHangar;
-    bool openDoorNotification;
-    bool takeOffNotification;
-    bool landingNotification;
-    bool resetAlarmsNotification;
-    bool alarmNotification;
-    bool droneAbove;
-    float droneDistance;
-    float currentTemp;
-    DroneState droneState;
-    HangarState hangarState;
+    Controller* pController;
+
+    bool newModeCmd;
+    bool newValveCmd;
+
+    unsigned long lastRxMs;
+    unsigned long T2_MS;
 };
 
 #endif
