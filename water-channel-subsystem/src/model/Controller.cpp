@@ -5,12 +5,12 @@
 #include "config.h"
 
 // Set false to disable debug prints
-static bool DEBUG = true;
+bool SVILUPPO = true;
 
 Controller::Controller(HWPlatform* hw)
     : 
     pHW(hw),
-    systemState(SystemState::AUTOMATIC),
+    systemState(SystemState::MANUAL_LOCAL),
     connectivityState(ConnectivityState::UNCONNECTED),
     waterLevel(0.0f),
     valveOpeningPercent(0),
@@ -19,6 +19,24 @@ Controller::Controller(HWPlatform* hw)
 void Controller::init() {
     pServo = pHW->getMotor();
     pBtn = pHW->getButton();
+    
+    pServo->motorOn();
+    // pServo->setPosition(0);
+    moveMotor(0);
+    if (SVILUPPO) {
+        Serial.println("Valve TEST");
+        delay(1000);
+        moveMotor(90);
+        delay(1000);
+        moveMotor(0);
+        // while (1) {
+        //     delay(1000);
+        //     pServo->setPosition(90);
+        //     delay(1000);
+        //     pServo->setPosition(0);
+        // }
+    }
+
     Serial.println("Controller initialized");
 }
 
@@ -75,6 +93,9 @@ HWPlatform* Controller::getHWPlatform() {
     return pHW;
 }
 
+void Controller::moveMotor(int angle) {
+    pServo->setPosition(angle);
+}
 
 void Controller::setSystemState(SystemState systemState) {
     this->systemState = systemState;
@@ -101,15 +122,15 @@ void Controller::applyValveToServo() {
 
 /* --------- Operator inputs --------- */
 
-bool Controller::isModeButtonPressed() {
-    pBtn->sync();
-    bool current = pBtn->isPressed();
+// bool Controller::isModeButtonPressed() {
+//     pBtn->sync();
+//     bool current = pBtn->isPressed();
 
-    // rising edge detect
-    bool pressedEdge = (current && !lastButtonState);
-    lastButtonState = current;
-    return pressedEdge;
-}
+//     // rising edge detect
+//     bool pressedEdge = (current && !lastButtonState);
+//     lastButtonState = current;
+//     return pressedEdge;
+// }
 
 float Controller::getPotentiometerPosition() {
     return this->potentiometerPosition;

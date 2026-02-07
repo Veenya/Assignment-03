@@ -41,7 +41,7 @@ void setup() {
     pPotentiometerTask->init(POTENTIOMETER_PERIOD);
     
     pControllerTask = new ControllerTask(pController, pCommunicationCenter, pUserPanel); 
-    pControllerTask->init(TANK_PERIOD);
+    pControllerTask->init(CONTROLLER_PERIOD);
 
     scheduler.addTask(pCommunicationTask);
     scheduler.addTask(pPotentiometerTask);
@@ -50,6 +50,5 @@ void setup() {
 
 void loop() {
     scheduler.schedule();
-    // pPotentiometerTask->tick();
-    Serial.println("Loop");
+    // Serial.println("Loop");
 }

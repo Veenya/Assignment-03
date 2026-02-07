@@ -2,12 +2,13 @@
 #include "model/Controller.h"
 #include "ControllerTask.h"
 
+
 ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCommunicationCenter, UserPanel* pUserPanel)
     : 
     pController(pController),
     pCommunicationCenter(pCommunicationCenter),
     pUserPanel(pUserPanel),
-    systemState(SystemState::AUTOMATIC),
+    systemState(SystemState::MANUAL_LOCAL),
     connectivityState(ConnectivityState::UNCONNECTED),
     waterLevel(0.0f),
     valveOpening(0),
@@ -72,25 +73,24 @@ void ControllerTask::checkSystemState() {
     // entrami sono check and reset del flag
     Serial.println("checkSystemState");
     // isModeButtonPressed();
-    if (isModeButtonPressed()) {
-    // if (1) {
-        Serial.println("check if pressed");
-        pController->setSystemState(SystemState::MANUAL_LOCAL);
-        this->systemState = SystemState::MANUAL_LOCAL;
-    }
-    if (pCommunicationCenter->checkAndResetNewModeCmd()) {
-        Serial.println("check if new cmd");
-        this->systemState = pController->getSystemState();
-    }
+    // if (isModeButtonPressed()) {
+    // // if (1) {
+    //     Serial.println("check if pressed");
+    //     pController->setSystemState(SystemState::MANUAL_LOCAL);
+    //     this->systemState = SystemState::MANUAL_LOCAL;
+    // }
+    // if (pCommunicationCenter->checkAndResetNewModeCmd()) {
+    //     Serial.println("check if new cmd");
+    //     this->systemState = pController->getSystemState();
+    // }
 }
 
 void ControllerTask::manageValve() {
-    // 2) Manual pot -> valve opening (keep your rule: only if CONNECTED)
     if (systemState == SystemState::MANUAL_LOCAL) {
         setValveOpening(pController->getPotentiometerPosition());
-    } else if (connectivityState == ConnectivityState::CONNECTED) { // se disconnesso chiudo
+    } else if (connectivityState == ConnectivityState::UNCONNECTED) { // se disconnesso chiudo
         setValveOpening(0);
-    } else {
+    } else if (connectivityState == ConnectivityState::CONNECTED) {
         setValveOpening(pController->getValveOpening());
     }
     applyValveToServo();
@@ -98,9 +98,14 @@ void ControllerTask::manageValve() {
 
 void ControllerTask::applyValveToServo() {
     // Safety: if UNCONNECTED, force closed
+    Serial.print("ControllerTask::applyValveToServo ");
+    Serial.print(valveOpening);
     int effectivePercent = (connectivityState == ConnectivityState::UNCONNECTED) ? 0 : valveOpening;
+    // int effectivePercent = valveOpening;
+    Serial.print(" -> ");
     int angle = percentToServoAngle(effectivePercent);
-    pServo->setPosition(angle);
+    Serial.println(angle);
+    pController->moveMotor(angle);
 }
 
 

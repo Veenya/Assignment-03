@@ -6,7 +6,7 @@ CommunicationTask::CommunicationTask(CommunicationCenter* pCommunicationCenter, 
     : 
     pCommunicationCenter(pCommunicationCenter), 
     pController(pController) {
-        setState(SystemState::AUTOMATIC);
+        setState(SystemState::MANUAL_LOCAL);
 }
 
 void CommunicationTask::tick() {

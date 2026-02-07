@@ -36,6 +36,7 @@ public:
     bool isManualRemote();
     bool isManualLocal();
     bool isUnconnected();
+    void moveMotor(int angle);
 
     /* --------- Water level (from CUS -> WCS for display) ---------
      * On WCS you may show WL on LCD if CUS sends it.
@@ -53,7 +54,7 @@ public:
 
     /* --------- Operator inputs (WCS local panel) --------- */
     // Button toggles MANUAL/AUTOMATIC (edge detection is usually in FSM/task)
-    bool isModeButtonPressed();
+    // bool isModeButtonPressed();
 
     // Potentiometer reading mapped to 0..100 (used only in MANUAL)
     int getValveOpening();

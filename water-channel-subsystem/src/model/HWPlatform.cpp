@@ -18,12 +18,6 @@ void HWPlatform::init() {
     pLcd->init();
     pLcd->backlight();
     pLcd->clear();
-
-
-    // pMotor->motorOn();
-    // pMotor->setPosition(0);
-
-
     Serial.println("HWPlatform inizializzata");
 }
 

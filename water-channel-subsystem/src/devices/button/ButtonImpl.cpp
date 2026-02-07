@@ -4,7 +4,7 @@
 ButtonImpl::ButtonImpl(int pin) {
     this->pin = pin;
     pinMode(pin, INPUT);
-    sync();
+    // sync();
     clicked = false;
 }
 
