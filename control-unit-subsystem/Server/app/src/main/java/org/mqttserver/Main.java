@@ -12,16 +12,26 @@ import org.mqttserver.services.mqtt.RemoteBrokerClientImpl;
 //import com.google.gson.JsonObject;
 import io.vertx.core.json.JsonObject;
 
+/*
+Avvia tre canali in parallelo:
+    - MQTT
+    - HTTP
+    - Seriale
+e li collega tramite un istanza di SystemController (controller)
+*/
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
+
+        String clientId = "java-client-" + System.currentTimeMillis();
+
         // 1) MQTT client (broker online)
         RemoteBrokerClientImpl mqttClient = new RemoteBrokerClientImpl(
                 "broker.mqtt-dashboard.com",
                 1883,
-                "java-client-demo-123"
+                clientId
         );
         mqttClient.start();
 
@@ -39,6 +49,7 @@ public class Main {
         System.out.println("Using serial port: " + serialPort);
 
         SerialCommChannelImpl serialComm = new SerialCommChannelImpl(serialPort, 9600);
+        
 
         // Thread che manda PING ogni 3s
         Thread tx = new Thread(() -> {
@@ -76,9 +87,20 @@ public class Main {
                         if (rep.containsKey("valveValue")) {
                             Integer reportedValve = rep.getInteger("valveValue");
                             if (reportedValve != null) {
-                                int expectedValve = controller.getValveValue();
-                                if (reportedValve != expectedValve) {
-                                    System.err.println("Valve mismatch: reported=" + reportedValve + " expected=" + expectedValve);
+
+                                if (controller.getIsManual()) {
+                                    // 🔴 MANUAL: Arduino comanda davvero
+                                    controller.setValveValueFromDashboard(reportedValve);
+                                    System.out.println("Valve set from Arduino (MANUAL): " + reportedValve);
+                                } else {
+                                    // 🟡 AUTO: solo verifica
+                                    int expectedValve = controller.getValveValue();
+                                    if (reportedValve != expectedValve) {
+                                        System.err.println(
+                                            "Valve mismatch in AUTO: reported=" + reportedValve +
+                                            " expected=" + expectedValve
+                                        );
+                                    }
                                 }
                             }
                         }
