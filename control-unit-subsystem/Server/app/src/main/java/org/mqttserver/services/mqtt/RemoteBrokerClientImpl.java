@@ -94,6 +94,8 @@ public class RemoteBrokerClientImpl {
         String topic = message.topicName();
         String payloadStr = safePayloadToString(message.payload());
 
+        System.out.println("MQTT IN topic=" + topic + " payload=" + payloadStr);
+
         // Qui gestisci SOLO quello che ti interessa (WL)
         if (!TOPIC_WL.equals(topic)) {
             return;

@@ -120,6 +120,7 @@ public class DataService extends AbstractVerticle {
         ctx.response()
                 .putHeader("content-type", "application/json")
                 .end(data.encode());
+        //System.out.println("ValveValue" + systemController.getValveValue());
     }
 
     private void handleGetWlHistory(RoutingContext ctx) {
