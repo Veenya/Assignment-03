@@ -9,7 +9,7 @@ ServoMotorImpl::ServoMotorImpl(int pin) {
 void ServoMotorImpl::motorOn() {
     motor.attach(pin);
     _on = true;
-    Serial.println("PIN " + String(pin));
+    // Serial.println("PIN " + String(pin));
 }
 
 bool ServoMotorImpl::isOn() {

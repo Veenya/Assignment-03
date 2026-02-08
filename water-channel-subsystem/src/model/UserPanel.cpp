@@ -28,7 +28,8 @@ void UserPanel::turnOffDisplay() {
 }
 
 void UserPanel::displayOpeningLevel(float val) {
-    pLcd->print("                "); // 16 spazi al posto di clear
+    // pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->clear();
     pLcd->setCursor(0, 1);
     pLcd->print("VALVE:");
     pLcd->print(val, 1); //1 decimale
@@ -36,27 +37,31 @@ void UserPanel::displayOpeningLevel(float val) {
 }
 
 void UserPanel::displayAutomatic() {
-    pLcd->print("                "); // 16 spazi al posto di clear
+    // pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->clear();
     pLcd->setCursor(0, 0);
     pLcd->print("AUTOMATIC"); 
 }
 
 void UserPanel::displayManualLocal() {
-    pLcd->print("                "); // 16 spazi al posto di clear
+    // pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->clear();
     pLcd->setCursor(0, 0);
-    pLcd->print("MANUAL_LOCAL)"); 
+    pLcd->print("CON MANUAL_LOCAL"); 
 }
 
 void UserPanel::displayManualRemote() {
-    pLcd->print("                "); // 16 spazi al posto di clear
+    // pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->clear();
     pLcd->setCursor(0, 0);
-    pLcd->print("MANUAL_REMOTE)"); 
+    pLcd->print("MANUAL_REMOTE"); 
 }
 
 void UserPanel::displayUnconnected() {
-    pLcd->print("                "); // 16 spazi al posto di clear
+    // pLcd->print("                "); // 16 spazi al posto di clear
+    pLcd->clear();
     pLcd->setCursor(0, 0);
-    pLcd->print("UNCONNECTED"); 
+    pLcd->print("UNCON MAN_LOCAL"); 
 }
 
 void UserPanel::displayWaterLevel(int waterLevel) {

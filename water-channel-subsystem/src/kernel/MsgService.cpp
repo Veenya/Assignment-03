@@ -33,14 +33,16 @@ void MsgServiceClass::sendMsg(const String& msg) {
     Serial.println(msg);
 }
 
-void serialEvent() {
-    /* reading the content */
+void MsgServiceClass::update() {
+    // MsgService.update();
+    // Serial.println("MsgServiceClass::update");
     while (Serial.available()) {
         char ch = (char)Serial.read();
         if (ch == '\n') {
-            MsgService.currentMsg = new Msg(content);
-            MsgService.msgAvailable = true;
-        } else {
+            currentMsg = new Msg(content);
+            msgAvailable = true;
+            content = "";
+        } else if (ch != '\r') {
             content += ch;
         }
     }

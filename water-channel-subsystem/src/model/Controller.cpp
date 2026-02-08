@@ -66,7 +66,9 @@ bool Controller::isUnconnected() {
 /* --------- Water level (optional for LCD) --------- */
 
 void Controller::setWaterLevel(float waterLevel) {
-    waterLevel = waterLevel;
+    Serial.print("Controller::setWaterLevel ");
+    Serial.println(waterLevel);
+    this->waterLevel = waterLevel;
 }
 
 float Controller::getWaterLevel() {
@@ -92,7 +94,7 @@ void Controller::syncButton() {
 }
 
 bool Controller::buttonCheckAndConsumeClick() {
-    Serial.print("Controller::buttonCheckAndConsumeClick ");
+    // Serial.print("Controller::buttonCheckAndConsumeClick ");
     bool clicked = this->pBtn->checkAndConsumeClick();
     Serial.println(clicked);
     

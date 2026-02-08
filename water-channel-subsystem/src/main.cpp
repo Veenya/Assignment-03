@@ -56,5 +56,6 @@ void setup() {
 }
 
 void loop() {
+    MsgService.update();
     scheduler.schedule();
 }

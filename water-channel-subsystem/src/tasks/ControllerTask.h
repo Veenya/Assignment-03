@@ -29,7 +29,7 @@ public:
     bool isUnconnected() const;
 
     /* --------- Water level (optional for LCD) --------- */
-    void setWaterLevel(float waterLevel);
+    void setWaterLevel(int waterLevel);
     float getWaterLevel() const;
 
     /* --------- Valve control --------- */

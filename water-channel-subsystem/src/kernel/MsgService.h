@@ -23,6 +23,7 @@ public:
     bool msgAvailable;
 
     void init();
+    void update();
 
     bool isMsgAvailable();
     Msg* receiveMsg();

@@ -4,7 +4,7 @@
 
 #define SCHEDULER_PERIOD     50     // interrupt fa ripartire lo scheduler ogni n millisecondi
 #define STATE_UPDATE_PERIOD  500    // periodo minimo di invio stato da CommunicationCenter in ms
-#define COMMUNICATION_PERIOD 1000   // tempo tick communication center
+#define COMMUNICATION_PERIOD 500    // tempo tick communication center
 #define CONTROLLER_PERIOD    1000   // assumo che la valvola ci metta 1 sec 
 #define POTENTIOMETER_PERIOD 500    // periodo campionamento potenziometro
 #define BUTTON_PERIOD        50     // periodo campionamento tasto cambio modalita'

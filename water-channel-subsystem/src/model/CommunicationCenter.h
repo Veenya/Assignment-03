@@ -41,7 +41,7 @@ public:
 private:
     Controller* pController;
     String lastSystemStateReceived;
-
+    void checkConnectivityTimeout();
 
     bool newModeCmd;
     bool newValveCmd;

@@ -19,10 +19,10 @@ void CommunicationCenter::notifyNewState() {
     String systemStateStr;
     String connectionStateStr;
     int valveOpening = pController->getValveOpening();
-    Serial.print("CommunicationCenter::notifyNewState ");
-    Serial.print(valveOpening);
-    Serial.print(" -> ");
-    Serial.println(String(valveOpening));
+    // Serial.print("CommunicationCenter::notifyNewState ");
+    // Serial.print(valveOpening);
+    // Serial.print(" -> ");
+    // Serial.println(String(valveOpening));
     
     if (pController->getSystemState() == SystemState::MANUAL_LOCAL) {
         systemStateStr = "MANUAL_LOCAL";
@@ -42,54 +42,89 @@ void CommunicationCenter::notifyNewState() {
 }
 
 void CommunicationCenter::sync() {
-    // 1) Read incoming messages from CUS (serial)
-    if (MsgService.isMsgAvailable()) {
-        Msg* msg = MsgService.receiveMsg();
-        if (msg != NULL) {
-            String content = msg->getContent();
-            // Any valid message means CUS is reachable -> CONNECTED
-            lastRxMs = millis();
-            pController->setConnectivityState(ConnectivityState::CONNECTED);
-
-            if (content == "PING") {
-                // nothing else to do
-            } else if (content.startsWith("MODE,")) {
-                String m = content.substring(13); // TODO rivedere
-                m.trim();
-                if (m == lastSystemStateReceived) {
-                    //! SKIP, non fare nulla
-                } else if (m == "MANUAL_LOCAL") {
-                    pController->setSystemState(SystemState::MANUAL_LOCAL);
-                    lastSystemStateReceived = "MANUAL_LOCAL";
-                    newModeCmd = true;
-                } else if (m == "MANUAL_REMOTE") {
-                    pController->setSystemState(SystemState::MANUAL_REMOTE);
-                    lastSystemStateReceived = "MANUAL_REMOTE";
-                    newModeCmd = true;
-                } else if (m == "AUTO") {
-                    pController->setSystemState(SystemState::AUTOMATIC);
-                    lastSystemStateReceived = "AUTO";
-                    newModeCmd = true;
-                }
-            } else if (content.startsWith("VALVE,")) {
-                String vStr = content.substring(6);
-                vStr.trim();
-                int v = vStr.toInt();
-                pController->setValveOpening(v);
-                newValveCmd = true;
-            } else if (content.startsWith("WL,")) {
-                // optional: show WL sent by CUS on LCD
-                String wlStr = content.substring(3);
-                wlStr.trim();
-                float waterLevel = wlStr.toFloat();
-                pController->setWaterLevel(waterLevel);
-            }
-
-            delete msg;
-        }
+    if (!MsgService.isMsgAvailable()) {
+        checkConnectivityTimeout();
+        return;
     }
 
-    // 2) Connectivity timeout -> UNCONNECTED (spec-like)
+    Msg* msg = MsgService.receiveMsg();
+    if (msg == NULL) {
+        checkConnectivityTimeout();
+        return;
+    }
+
+    String content = msg->getContent();
+    delete msg;
+
+    lastRxMs = millis();
+    pController->setConnectivityState(ConnectivityState::CONNECTED);
+
+    Serial.print("Received from serial: ");
+    Serial.println(content);
+
+    // ---- PARSING A 4 CAMPI ----
+    String fields[4];
+    int fieldIndex = 0;
+
+    int start = 0;
+    while (fieldIndex < 4) {
+        int comma = content.indexOf(',', start);
+        if (comma == -1) {
+            fields[fieldIndex++] = content.substring(start);
+            break;
+        }
+        fields[fieldIndex++] = content.substring(start, comma);
+        start = comma + 1;
+    }
+
+    // Trim di sicurezza
+    for (int i = 0; i < fieldIndex; i++) {
+        fields[i].trim();
+    }
+
+    // ---- DISPATCH ----
+    // CUS,AUTO,5,10
+    if (fields[0] == "CUS") {
+        // MODE
+        if (fields[1] != lastSystemStateReceived) {
+            if (fields[1] == "MANUAL_LOCAL") {
+                pController->setSystemState(SystemState::MANUAL_LOCAL);
+            }
+            else if (fields[1] == "MANUAL_REMOTE") {
+                pController->setSystemState(SystemState::MANUAL_REMOTE);
+            }
+            else if (fields[1] == "AUTOMATIC" || fields[1] == "AUTO") {
+                pController->setSystemState(SystemState::AUTOMATIC);
+            }
+            lastSystemStateReceived = fields[1];
+            newModeCmd = true;
+        }
+
+        // VALVE
+        int v = fields[2].toInt();
+        pController->setValveOpening(v);
+        newValveCmd = true;
+        
+        // WATER LEVEL
+        int wl = fields[3].toInt();
+        Serial.print("WATER LEVEL IS ");
+        Serial.println(wl);
+        pController->setWaterLevel(wl);
+
+        Serial.print("CUS parsed -> ");
+        Serial.print(fields[1]);
+        Serial.print(", ");
+        Serial.print(fields[2]);
+        Serial.print(", ");
+        Serial.println(fields[3]);
+
+        // qui decidi tu cosa farne
+    }
+
+    checkConnectivityTimeout();
+}
+
+void CommunicationCenter::checkConnectivityTimeout() {
     unsigned long now = millis();
     if (lastRxMs == 0 || now - lastRxMs > T2_MS) {
         pController->setConnectivityState(ConnectivityState::UNCONNECTED);

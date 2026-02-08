@@ -16,7 +16,7 @@ ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCo
 
 
 void ControllerTask::tick() {
-    Serial.println("Controller task tick");
+    // Serial.println("Controller task tick");
     this->connectivityState = pController->getConnectivityState();
     checkSystemState();
     manageValve();
@@ -49,8 +49,10 @@ void ControllerTask::updateDisplay() {
     } else if (systemState == SystemState::AUTOMATIC) {
         pUserPanel->displayAutomatic();
     }
-
-    pUserPanel->displayWaterLevel(waterLevel);
+    
+    Serial.print("ControllerTask::updateDisplay ");
+    Serial.println(pController->getWaterLevel());
+    pUserPanel->displayWaterLevel(pController->getWaterLevel());
 }
 
 void ControllerTask::refreshOutputs() {
@@ -73,9 +75,9 @@ void ControllerTask::checkSystemState() {
 }
 
 void ControllerTask::manageValve() {
-    Serial.print("ControllerTask::manageValve ");
-    Serial.print(pController->getPotentiometerPosition());
-    Serial.print(" -> ");
+    // Serial.print("ControllerTask::manageValve ");
+    // Serial.print(pController->getPotentiometerPosition());
+    // Serial.print(" -> ");
     if (systemState == SystemState::MANUAL_LOCAL) {
         int valvePercent = pController->getPotentiometerPosition();
         setValveOpening(valvePercent);
@@ -85,23 +87,23 @@ void ControllerTask::manageValve() {
     } else if (connectivityState == ConnectivityState::CONNECTED) {
         setValveOpening(pController->getValveOpening());
     }
-    Serial.println(pController->getValveOpening());
+    // Serial.println(pController->getValveOpening());
     applyValveToServo();
 }
 
 void ControllerTask::applyValveToServo() {
     // Safety: if UNCONNECTED, force closed
-    Serial.print("ControllerTask::applyValveToServo ");
-    Serial.print(valveOpening);
+    // Serial.print("ControllerTask::applyValveToServo ");
+    // Serial.print(valveOpening);
     int effectivePercent;
     if (systemState != SystemState::MANUAL_LOCAL && connectivityState == ConnectivityState::UNCONNECTED) {
         effectivePercent = 0;
     } else {
         effectivePercent = valveOpening;
     }
-    Serial.print(" -> ");
+    // Serial.print(" -> ");
     int angle = pController->percentToServoAngle(effectivePercent);
-    Serial.println(angle);
+    // Serial.println(angle);
     pController->moveMotor(angle);
 }
 
@@ -133,8 +135,10 @@ bool ControllerTask::isUnconnected() const {
 
 /* --------- Water level (optional for LCD) --------- */
 
-void ControllerTask::setWaterLevel(float waterLevel) {
-    waterLevel = waterLevel;
+void ControllerTask::setWaterLevel(int waterLevel) {
+    Serial.print("ControllerTask::setWaterLevel ");
+    Serial.println(waterLevel);
+    this->waterLevel = waterLevel;
 }
 
 float ControllerTask::getWaterLevel() const {
