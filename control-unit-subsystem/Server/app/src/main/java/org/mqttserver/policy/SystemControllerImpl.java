@@ -11,8 +11,8 @@ import java.util.Map;
 public class SystemControllerImpl implements SystemController {
 
     // Spec thresholds
-    private final float L1 = 5f;
-    private final float L2 = 20f;
+    private final float L1 = 8f;
+    private final float L2 = 16f;
 
     // Times (milliseconds)
     private final long T1_MS = 10_000; // 10 seconds above L1 before opening 50%

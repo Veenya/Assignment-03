@@ -2,7 +2,6 @@ package org.mqttserver;
 
 import io.vertx.core.Vertx;
 
-import org.mqttserver.policy.SystemController;
 import org.mqttserver.policy.SystemControllerImpl;
 import org.mqttserver.services.http.DataService;
 import org.mqttserver.services.mqtt.RemoteBrokerClientImpl;
@@ -47,6 +46,18 @@ public class Main {
 
         SerialCommChannelImpl serialComm = new SerialCommChannelImpl(serialPort, 9600);
         
+        // ---- Thread dedicato: aggiorna CONNECTED/KO indipendentemente dalla seriale ----
+        Thread connectivity = new Thread(() -> {
+            while (true) {
+                try {
+                    systemController.updateConnectivity();
+                    Thread.sleep(200); // 5 Hz
+                } catch (InterruptedException ignored) {}
+            }
+        });
+        connectivity.setDaemon(true);
+        connectivity.setName("CONNECTIVITY");
+        connectivity.start();
 
         // ---------- TX: invia comandi come stringhe ----------
         // Thread che manda ogni 3s:
@@ -67,6 +78,7 @@ public class Main {
             }
         });
         tx.setDaemon(true);
+        tx.setName("SERIAL-TX");
         tx.start();
 
 
@@ -83,13 +95,14 @@ public class Main {
                 try {
                     if (serialComm.isMsgAvailable()) {
                         String msg = serialComm.receiveMessageFromArduino();
+                        if (msg != null) msg = msg.trim();
 
-                        
-                        systemController.resetLastArduinoConnection();
-                        if (msg != null && !msg.trim().isEmpty()) {
-                            System.out.println("SERIAL RX: " + msg);
-                            
+                        if (msg == null || msg.isEmpty()) {
+                            continue;
                         }
+
+                        systemController.resetLastArduinoConnection();
+                        System.out.println("SERIAL RX: " + msg);
 
 
                         // Caso A: formato CSV "state,conn,valve"
@@ -144,14 +157,16 @@ public class Main {
                         
                     }
                     systemController.updatePolicy();
-                    systemController.updateConnectivity();
+                    
                     Thread.sleep(20);
                 } catch (Exception e) {
-                    System.err.println("Serial RX error: " + e.getMessage());
+                    System.err.println("SERIAL-RX error: " + e.getMessage());
+                    try { Thread.sleep(200); } catch (InterruptedException ignored) {}
                 }
             }
         });
         rx.setDaemon(true);
+        rx.setName("SERIAL-RX");
         rx.start();
 
         System.out.println("System started: HTTP on " + httpPort + ", MQTT connected, Serial test running");

@@ -18,8 +18,7 @@ public class SerialCommChannelImpl implements SerialCommChannel, SerialPortEvent
                 SerialPort.DATABITS_8,
                 SerialPort.STOPBITS_1,
                 SerialPort.PARITY_NONE);
-        serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN |
-                SerialPort.FLOWCONTROL_RTSCTS_OUT);
+        serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
         serialPort.addEventListener(this, SerialPort.MASK_RXCHAR);
         //serialPort.addEventListener(this);
     }
@@ -48,7 +47,7 @@ public class SerialCommChannelImpl implements SerialCommChannel, SerialPortEvent
             
 
         }
-        return "Failed to retrieve data from Arduino";
+        return null;
 
     }
 
