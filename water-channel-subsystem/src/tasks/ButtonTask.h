@@ -3,7 +3,6 @@
 
 #include "model/Controller.h"
 #include "model/HWPlatform.h"
-// #include "model/States.h"
 #include "config.h"
 #include "devices/button/ButtonImpl.h"
 #include "kernel/Task.h"
@@ -14,7 +13,6 @@ public:
     void tick();
 
 private:
-    HWPlatform* pHW;
     Controller* pController;
     ButtonImpl* pButton;
 

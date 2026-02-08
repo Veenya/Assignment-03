@@ -2,8 +2,7 @@
 #include "PotentiometerTask.h"
 
 PotentiometerTask::PotentiometerTask(Controller* pController) : pController(pController) {
-    pHW = pController->getHWPlatform();
-    pPotentiometer = pHW->getPotentiometer(); 
+    pPotentiometer = pController->getHWPlatform()->getPotentiometer(); 
 }
 
 void PotentiometerTask::tick() {

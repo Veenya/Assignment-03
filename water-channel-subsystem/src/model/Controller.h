@@ -72,7 +72,6 @@ private:
     float waterLevel;                // last WL known (optional, for LCD)
     float potentiometerPosition;
     int valveOpening;
-    bool lastButtonState;
 };
 
 #endif

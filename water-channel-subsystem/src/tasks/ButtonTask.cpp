@@ -2,8 +2,7 @@
 #include "ButtonTask.h"
 
 ButtonTask::ButtonTask(Controller* pController) : pController(pController) {
-    pHW = pController->getHWPlatform();
-    pButton = pHW->getButton(); 
+    pButton = pController->getHWPlatform()->getButton(); 
 }
 
 void ButtonTask::tick() {

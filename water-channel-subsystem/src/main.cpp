@@ -36,7 +36,7 @@ void setup() {
     pCommunicationCenter = new CommunicationCenter(pController);
     pCommunicationCenter->init();
 
-    pCommunicationTask = new CommunicationTask(pCommunicationCenter, pController);
+    pCommunicationTask = new CommunicationTask(pCommunicationCenter);
     pCommunicationTask->init(COMMUNICATION_PERIOD);
 
     pPotentiometerTask = new PotentiometerTask(pController);

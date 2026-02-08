@@ -60,7 +60,6 @@ private:
 
     float waterLevel;
     int valveOpening;
-    bool lastButtonState;
     void checkSystemState();
     void manageValve();
 };

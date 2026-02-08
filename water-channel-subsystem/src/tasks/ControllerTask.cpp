@@ -11,13 +11,8 @@ ControllerTask::ControllerTask(Controller* pController, CommunicationCenter* pCo
     systemState(SystemState::MANUAL_LOCAL),
     connectivityState(ConnectivityState::UNCONNECTED),
     waterLevel(0.0f),
-    valveOpening(0),
-    lastButtonState(false)
-    {
-        // pServo = pHW->getMotor();
-        // pPotentiometer = pHW->getPotentiometer();
-        // pBtn = pHW->getButton();
-    }
+    valveOpening(0)
+    {}
 
 
 void ControllerTask::tick() {

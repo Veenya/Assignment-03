@@ -23,7 +23,6 @@ public:
 
 
 private:
-    HWPlatform* pHW;
     Controller* pController;
     PotentiometerImpl* pPotentiometer;
 

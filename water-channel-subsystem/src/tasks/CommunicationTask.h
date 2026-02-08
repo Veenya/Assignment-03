@@ -8,21 +8,13 @@
 
 class CommunicationTask : public Task {
 public:
-    CommunicationTask(CommunicationCenter* pCommunicationCenter, Controller* pController);
+    CommunicationTask(CommunicationCenter* pCommunicationCenter);
     void tick();
 
 private:
     unsigned long lastStateUpdate;
     unsigned long now;
-    void setState(SystemState state);
-    long elapsedTimeInState();
-
-    SystemState state;
-    long stateTimestamp;
-    bool justEntered;
-
     CommunicationCenter* pCommunicationCenter;
-    Controller* pController;
 };
 
 #endif

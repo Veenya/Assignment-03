@@ -13,8 +13,7 @@ Controller::Controller(HWPlatform* hw)
     systemState(SystemState::MANUAL_LOCAL),
     connectivityState(ConnectivityState::UNCONNECTED),
     waterLevel(0.0f),
-    valveOpening(0),
-    lastButtonState(false) {}
+    valveOpening(0) {}
 
 void Controller::init() {
     pServo = pHW->getMotor();

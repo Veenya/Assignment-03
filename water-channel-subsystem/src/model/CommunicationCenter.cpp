@@ -9,9 +9,7 @@ void CommunicationCenter::init() {
     newModeCmd = false;
     newValveCmd = false;
 
-    // connectivity tracking
     lastRxMs = 0;
-    // T2 timeout (ms) - set from config.h if you want
     T2_MS = 15000;
     Serial.println("Communication Center initialized");
 }
@@ -35,8 +33,6 @@ void CommunicationCenter::notifyNewState() {
     }
     
     connectionStateStr = (pController->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
-
-    // TODO Serve il connection state?
 
     MsgService.sendMsg(
         systemStateStr + "," +
@@ -96,12 +92,9 @@ void CommunicationCenter::sync() {
     // 2) Connectivity timeout -> UNCONNECTED (spec-like)
     unsigned long now = millis();
     if (lastRxMs == 0 || now - lastRxMs > T2_MS) {
-        // never received anything yet
         pController->setConnectivityState(ConnectivityState::UNCONNECTED);
     }
 }
-
-/* -------- Optional "checkAndReset" for tasks -------- */
 
 bool CommunicationCenter::checkAndResetNewModeCmd() {
     bool r = newModeCmd;
