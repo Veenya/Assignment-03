@@ -1,59 +1,46 @@
 package org.mqttserver.policy;
+import org.mqttserver.presentation.ArduinoConnectionStatus;
+import org.mqttserver.presentation.ESPConnectionStatus;
+import org.mqttserver.presentation.SystemStatus;
+import org.mqttserver.presentation.ValveStatus;
 
-//import io.vertx.core.buffer.Buffer;
-import org.mqttserver.presentation.Status;
-import org.mqttserver.services.mqtt.Broker;
-import org.mqttserver.presentation.JSONUtils;
-//import org.mqttserver.presentation.MessageToArduino;
-import org.mqttserver.presentation.MessageFromArduino;
 
 import java.util.EnumMap;
-//import java.util.HashMap;
 import java.util.Map;
-
-//TODO: UNCONNECTED non può funzionare se non chiami updateConnectivity()
-// Devi chiamarlo periodicamente nel CUS, per esempio con un timer (Vert.x setPeriodic) 
-// oppure ogni volta che gestisci qualche evento.
-// TODO: NOT_AVAILABLE è una cosa DBS-side
-// Non ha senso calcolarla dentro CUS: 
-// è la dashboard che decide “NOT_AVAILABLE” quando non riesce a fare HTTP verso CUS.
-
-/*
-È la parte “logica” del tuo progetto: tiene in memoria vari stati (es. manuale/automatico) e valori (WL).
-Qui dentro aggiorni WL quando arriva un messaggio dal sensore.
- */
 
 public class SystemControllerImpl implements SystemController {
 
     // Spec thresholds
-    private final float L1 = 5f;
-    private final float L2 = 20f;
+    private final float L1 = 8f;
+    private final float L2 = 16f;
 
     // Times (milliseconds)
     private final long T1_MS = 10_000; // 10 seconds above L1 before opening 50%
     private final long T2_MS = 15_000; // 15 seconds without data => UNCONNECTED
 
     // State
-    private Status status = Status.AUTO_CLOSED; // starting mode is AUTOMATIC
-    private float wl = 0f;
+    private SystemStatus systemStatus = SystemStatus.MANUAL_LOCAL; // starting mode is AUTOMATIC
+    private ArduinoConnectionStatus arduinoConnectionStatus = ArduinoConnectionStatus.KO;
+    private ESPConnectionStatus espConnectionStatus = ESPConnectionStatus.KO;
+    private ValveStatus valveStatus = ValveStatus.AUTO_CLOSED;
 
-    // Manual mode flag
-    private boolean isManual = false;
+    private float wl = 0f;
 
     // Manual valve value (0..100)
     private int manualValveValue = 0;
 
     // For timing
-    private long lastTmsSampleAtMs = 0L;     // last received WL timestamp
+    private long lastESPConnection = 0L;     // last received WL timestamp
+    private long lastArduinoConnection = 0L; // last message from arduino timestamp
     private Long aboveL1SinceMs = null;      // when WL first went above L1 (used for T1)
 
     // Map status -> valve percent (automatic states only)
-    private final Map<Status, Integer> statusValveValue = new EnumMap<>(Status.class);
+    private final Map<ValveStatus, Integer> statusValveValue = new EnumMap<>(ValveStatus.class);
 
     public SystemControllerImpl() {
-        statusValveValue.put(Status.AUTO_CLOSED, 0);
-        statusValveValue.put(Status.AUTO_OPEN_50, 50);
-        statusValveValue.put(Status.AUTO_OPEN_100, 100);
+        statusValveValue.put(ValveStatus.AUTO_CLOSED, 0);
+        statusValveValue.put(ValveStatus.AUTO_OPEN_50, 50);
+        statusValveValue.put(ValveStatus.AUTO_OPEN_100, 100);
     }
 
     /**
@@ -62,46 +49,52 @@ public class SystemControllerImpl implements SystemController {
     @Override
     public void setWL(float wl) {
         this.wl = wl;
-        this.lastTmsSampleAtMs = System.currentTimeMillis();
         updatePolicy();
     }
 
-    /**
-     * TODO
-     * Should be called periodically (by a timer in CUS) to update UNCONNECTED state.
-     * If you don't call this anywhere, UNCONNECTED will never trigger.
-     */
-    public void updateConnectivity() {
-        if (isManual) {
-            // manual mode still depends on connectivity, but specification says UNCONNECTED is based on TMS data
-            // keep manual unless no data for T2 -> then UNCONNECTED
-        }
-
-        long now = System.currentTimeMillis();
-        if (lastTmsSampleAtMs == 0L) {
-            // never received data
-            status = Status.UNCONNECTED;
-            return;
-        }
-
-        if (now - lastTmsSampleAtMs > T2_MS) {
-            status = Status.UNCONNECTED;
-        } else {
-            // if we were unconnected, restore to a reasonable state
-            if (status == Status.UNCONNECTED) {
-                status = isManual ? Status.MANUAL : Status.AUTO_CLOSED;
-            }
-        }
+    @Override
+    public void resetLastESPConnection() {
+        System.out.println("Dentro resetLastESPConnection, updating ESP TMS");
+        this.lastESPConnection = System.currentTimeMillis();
     }
 
+    @Override
+    public void resetLastArduinoConnection() {
+        System.out.println("Dentro resetLastArduinoConnection, updating Arduino TMS");
+        this.lastArduinoConnection = System.currentTimeMillis();
+    }
 
-    public synchronized void updateConnectivityOnly() {
+    public void updateConnectivity() {
         long now = System.currentTimeMillis();
-        if (lastTmsSampleAtMs == 0L || (now - lastTmsSampleAtMs) > T2_MS) {
-            status = Status.UNCONNECTED;
-        } else if (status == Status.UNCONNECTED) {
-            status = isManual ? Status.MANUAL : Status.AUTO_CLOSED;
+        // System.out.println("lastESPConnection " + lastESPConnection);
+        // System.out.println("lastArduinoConnection " + lastArduinoConnection);
+        // ESP
+        if (lastESPConnection == 0L) {
+            espConnectionStatus = ESPConnectionStatus.KO; // mai ricevuto
+        } else if (now - lastESPConnection > T2_MS) {
+            espConnectionStatus = ESPConnectionStatus.KO;
+        } else {
+            espConnectionStatus = ESPConnectionStatus.CONNECTED;
         }
+
+        // Arduino
+        if (lastArduinoConnection == 0L) {
+            arduinoConnectionStatus = ArduinoConnectionStatus.KO; // mai ricevuto
+        } else if (now - lastArduinoConnection > T2_MS) {
+            arduinoConnectionStatus = ArduinoConnectionStatus.KO;
+
+        } else {
+            arduinoConnectionStatus = ArduinoConnectionStatus.CONNECTED;
+        }
+
+        // if (arduinoConnectionStatus == ArduinoConnectionStatus.KO
+        //         && espConnectionStatus == ESPConnectionStatus.KO) {
+        //     systemStatus = SystemStatus.MANUAL_LOCAL; // oppure un FALLBACK dedicato
+        // } else if (arduinoConnectionStatus == ArduinoConnectionStatus.KO) {
+        //     systemStatus = SystemStatus.MANUAL_LOCAL;
+        // } else if (espConnectionStatus == ESPConnectionStatus.KO) {
+        //     systemStatus = SystemStatus.MANUAL_REMOTE;
+        // }
     }
 
 
@@ -117,45 +110,72 @@ public class SystemControllerImpl implements SystemController {
     public void updatePolicy() {
         long now = System.currentTimeMillis();
 
-        // Connectivity (UNCONNECTED if no samples for T2)
-        if (lastTmsSampleAtMs == 0L || (now - lastTmsSampleAtMs) > T2_MS) {
-            status = Status.UNCONNECTED;
-            return;
-        }
+        if (systemStatus == SystemStatus.AUTOMATIC) {
+            // AUTO policy
+            if (wl < L1) {
+                // WL <= L1 => closed and reset timer
+                valveStatus = ValveStatus.AUTO_CLOSED;
+                aboveL1SinceMs = null;
+            } else if (wl > L1 && wl < L2) {
+                if (aboveL1SinceMs == null) {
+                    aboveL1SinceMs = now; // start timing above L1
+                }
+                if (now - aboveL1SinceMs >= T1_MS) {
+                    valveStatus = ValveStatus.AUTO_OPEN_50;
+                }
 
-        // Manual mode overrides auto substates
-        if (isManual) {
-            status = Status.MANUAL;
-            return;
+            } else if (wl > L2) {
+                valveStatus = ValveStatus.AUTO_OPEN_100;
+            } 
         }
-
-        // Validate WL
-        if (wl < 0f) {
-            status = Status.INVALID_STATUS;
-            return;
-        }
-
-        // AUTO policy
-        if (wl > L1) {
-            if (aboveL1SinceMs == null) {
-                aboveL1SinceMs = now; // start timing above L1
-            }
-            if (now - aboveL1SinceMs >= T1_MS) {
-                status = Status.AUTO_OPEN_50;
-            } else {
-                status = Status.AUTO_CLOSED; // not yet above l1 for t1
-            }
-        } else {
-            // WL <= L1 => closed and reset timer
-            status = Status.AUTO_CLOSED;
-            aboveL1SinceMs = null;
-        }
+        
 
     }
 
     @Override
-    public Status getStatus() {
-        return status;
+    public SystemStatus getSystemStatus() {
+        return systemStatus;
+    }
+
+    
+    @Override
+    public ArduinoConnectionStatus getArduinoConnectionStatus() {
+        return arduinoConnectionStatus;
+    }
+
+    
+    @Override
+    public ESPConnectionStatus getEspConnectionStatus() {
+        return espConnectionStatus;
+    }
+
+    
+    @Override
+    public ValveStatus getValveStatus() {
+        return valveStatus;
+    }
+
+    @Override
+    public void setSystemStatus(SystemStatus systemStatus) {
+        this.systemStatus = systemStatus;
+    }
+
+    
+    @Override
+    public void setArduinoConnectionStatus(ArduinoConnectionStatus arduinoConnectionStatus) {
+        this.arduinoConnectionStatus = arduinoConnectionStatus;
+    }
+
+    
+    @Override
+    public void setEspConnectionStatus(ESPConnectionStatus espConnectionStatus) {
+        this.espConnectionStatus = espConnectionStatus;
+    }
+
+    
+    @Override
+    public void setValveStatus(ValveStatus valveStatus) {
+        this.valveStatus = valveStatus;
     }
 
     @Override
@@ -169,57 +189,51 @@ public class SystemControllerImpl implements SystemController {
      */
     @Override
     public int getValveValue() {
-        if (isManual) return manualValveValue;
-        return statusValveValue.getOrDefault(status, 0);
+        if (getIsManual()) return manualValveValue;
+        return statusValveValue.getOrDefault(valveStatus, 0);
     }
 
     @Override
-    public void setValveValueFromDashboard(int valveValue) {
+    public void setValveValue(int valveValue) {
         // In spec, this is only meaningful in MANUAL mode
-        this.manualValveValue = clampPercent(valveValue);
-    }
-
-
-
-
-    @Override
-    public Map<Status, Integer> getStatusValveValue() {
-        return statusValveValue;
+        this.manualValveValue = valveValue;
     }
 
     @Override
-    public void checkValveValue(String msg, Broker broker) {
-        // This verifies the valve value reported by Arduino is consistent with the commanded valve value.
-        try {
-            Integer reported = JSONUtils.jsonToObject(msg, MessageFromArduino.class).getValveValue();
-            int expected = broker.getSystemController().getValveValue();
-
-            if (reported != null && reported == expected) {
-                // ok: you can store it if you want to represent actual valve position
-                // (in this simplified model, we just accept it)
-            } else {
-                System.err.println("SERVER: Valve value incorrect. Expected=" + expected + " reported=" + reported);
-            }
-        } catch (Exception ex) {
-            System.err.println("SERVER: waiting for valid data from Arduino...");
-        }
-    }
-
-    @Override
-    public void setIsManual(boolean isManual) {
-        this.isManual = isManual;
+    public void setIsManualLocal() {
+        this.systemStatus = SystemStatus.MANUAL_LOCAL;
         // Quando cambi mode riallinea la valvola
         updatePolicy();
     }
 
     @Override
-    public boolean getIsManual() {
-        return isManual;
+    public void setIsManualRemote() {
+        this.systemStatus = SystemStatus.MANUAL_REMOTE;
+        // Quando cambi mode riallinea la valvola
+        updatePolicy();
     }
 
-    private int clampPercent(int v) {
-        if (v < 0) return 0;
-        if (v > 100) return 100;
-        return v;
+    public void setIsAutomatic() {
+        this.systemStatus = SystemStatus.AUTOMATIC;
+    }
+
+    @Override
+    public boolean getIsAutomatic() {
+        return this.systemStatus == SystemStatus.AUTOMATIC;
+    }
+
+    @Override
+    public boolean getIsManual() {
+        return this.systemStatus == SystemStatus.MANUAL_LOCAL || this.systemStatus == SystemStatus.MANUAL_REMOTE;
+    }
+
+    @Override
+    public boolean getIsManualLocal() {
+        return this.systemStatus == SystemStatus.MANUAL_LOCAL;
+    }
+
+    @Override
+    public boolean getIsManualRemote() {
+        return this.systemStatus == SystemStatus.MANUAL_REMOTE;
     }
 }

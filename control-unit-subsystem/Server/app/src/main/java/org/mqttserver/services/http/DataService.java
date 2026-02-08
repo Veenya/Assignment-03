@@ -12,23 +12,6 @@ import org.mqttserver.policy.SystemController;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-//TODO
-/*
-
-5) Dashboard: espongo sia comando che feedback
-
-In /api/systemdata aggiungerei:
-
-valveValue = comando (già c’è)
-
-valveActual = feedback (nuovo)
-
-arduinoConnected (nuovo)
-
-Così vedi subito se Arduino sta seguendo i comandi.
-
-*/
-
 public class DataService extends AbstractVerticle {
 
     private final int port;
@@ -69,25 +52,48 @@ public class DataService extends AbstractVerticle {
         vertx.setPeriodic(1000, id -> recordWlSample());
     }
 
-    private void handleSetMode(RoutingContext ctx) {
-        HttpServerResponse response = ctx.response();
-        JsonObject body = ctx.body().asJsonObject();
+    // Mode puo essere: AUTO, MANUAL_LOCAL, MANUAL_REMOTE
+// Mode puo essere: AUTO, MANUAL_LOCAL, MANUAL_REMOTE
+private void handleSetMode(RoutingContext ctx) {
+    HttpServerResponse response = ctx.response();
+    JsonObject body = ctx.body().asJsonObject();
 
-        if (body == null || !body.containsKey("isManual")) {
-            response.setStatusCode(400).end();
-            return;
-        }
-
-        boolean isManual = body.getBoolean("isManual", false);
-        systemController.setIsManual(isManual);
-
-        // se torni in AUTO, invalida eventuale comando manuale
-        if (!isManual) {
-            systemController.setValveValueFromDashboard(-1);
-        }
-
-        response.setStatusCode(200).end();
+    if (body == null || !body.containsKey("mode")) {
+        response.setStatusCode(400).end("Missing field: mode");
+        return;
     }
+
+    String mode = body.getString("mode", "").trim().toUpperCase();
+
+    switch (mode) {
+        case "AUTO":
+            systemController.setIsAutomatic();   
+            // opzionale: invalida comando manuale
+            // systemController.setValveValue(-1);
+            response.setStatusCode(200).end();
+            return;
+        case "AUTOMATIC":
+            systemController.setIsAutomatic();   
+            // opzionale: invalida comando manuale
+            // systemController.setValveValue(-1);
+            response.setStatusCode(200).end();
+            return;
+
+        case "MANUAL_LOCAL":
+            systemController.setIsManualLocal();
+            response.setStatusCode(200).end();
+            return;
+
+        case "MANUAL_REMOTE":
+            systemController.setIsManualRemote();
+            response.setStatusCode(200).end();
+            return;
+
+        default:
+            response.setStatusCode(400).end("Invalid mode. Use: AUTO, MANUAL_LOCAL, MANUAL_REMOTE");
+    }
+}
+
 
     private void handleSetValve(RoutingContext ctx) {
         HttpServerResponse response = ctx.response();
@@ -106,16 +112,22 @@ public class DataService extends AbstractVerticle {
             return;
         }
 
-        systemController.setValveValueFromDashboard(valveValue);
+        systemController.setValveValue(valveValue);
         response.setStatusCode(200).end();
     }
 
     private void handleGetSystemData(RoutingContext ctx) {
         JsonObject data = new JsonObject()
-                .put("status", String.valueOf(systemController.getStatus()))
-                .put("isManual", systemController.getIsManual())
+                .put("systemStatus", String.valueOf(systemController.getSystemStatus()))
+                .put("arduinoConnectionStatus", String.valueOf(systemController.getArduinoConnectionStatus()))
+                .put("espConnectionStatus", String.valueOf(systemController.getEspConnectionStatus()))
+                .put("isManualLocal", systemController.getIsManualLocal())
+                .put("isManualRemote", systemController.getIsManualRemote())
+                .put("isAutomatic", systemController.getIsAutomatic())
                 .put("valveValue", systemController.getValveValue())
                 .put("wl", systemController.getWl());
+
+        System.out.println("GET /api/systemdata -> " + data.encode());
 
         ctx.response()
                 .putHeader("content-type", "application/json")

@@ -3,14 +3,11 @@ package org.mqttserver;
 import io.vertx.core.Vertx;
 
 import org.mqttserver.policy.SystemControllerImpl;
-import org.mqttserver.policy.SystemController;
-import org.mqttserver.serial.SerialCommChannelImpl;
-import org.mqttserver.serial.SerialScannerImpl;
 import org.mqttserver.services.http.DataService;
 import org.mqttserver.services.mqtt.RemoteBrokerClientImpl;
+import org.mqttserver.serial.SerialCommChannelImpl;
 
-//import com.google.gson.JsonObject;
-import io.vertx.core.json.JsonObject;
+import org.mqttserver.presentation.SystemStatus;
 
 /*
 Avvia tre canali in parallelo:
@@ -21,113 +18,155 @@ e li collega tramite un istanza di SystemController (controller)
 */
 
 public class Main {
-
     public static void main(String[] args) throws Exception {
-
+        SystemControllerImpl systemController = new SystemControllerImpl();
+        String lastSystemStatusReceived[] = {"MANUAL_REMOTE"};
 
         String clientId = "java-client-" + System.currentTimeMillis();
+        
 
         // 1) MQTT client (broker online)
         RemoteBrokerClientImpl mqttClient = new RemoteBrokerClientImpl(
                 "broker.mqtt-dashboard.com",
                 1883,
-                clientId
+                clientId,
+                systemController
         );
         mqttClient.start();
-
-        SystemController controller = mqttClient.getSystemController();
 
         // 2) HTTP service (dashboard)
         Vertx vertx = Vertx.vertx();
         int httpPort = 8050;
-        vertx.deployVerticle(new DataService(httpPort, controller));
+        vertx.deployVerticle(new DataService(httpPort, systemController));
 
         // 3) SERIAL test (non blocca il resto)
-        // TODO: debug serial scanner...
         //String serialPort = new SerialScannerImpl().getConnectedPort();
         String serialPort = "COM5";
         System.out.println("Using serial port: " + serialPort);
 
         SerialCommChannelImpl serialComm = new SerialCommChannelImpl(serialPort, 9600);
         
+        // ---- Thread dedicato: aggiorna CONNECTED/KO indipendentemente dalla seriale ----
+        Thread connectivity = new Thread(() -> {
+            while (true) {
+                try {
+                    systemController.updateConnectivity();
+                    Thread.sleep(200); // 5 Hz
+                } catch (InterruptedException ignored) {}
+            }
+        });
+        connectivity.setDaemon(true);
+        connectivity.setName("CONNECTIVITY");
+        connectivity.start();
 
-        // Thread che manda PING ogni 3s
+        // ---------- TX: invia comandi come stringhe ----------
+        // Thread che manda ogni 3s:
+            // "mode"
+            // "valve"
+            // "wl"
+            // "status"
         Thread tx = new Thread(() -> {
             while (true) {
                 //serialComm.sendMessageToArduino("PING");
                 try { 
-                    JsonObject cmd = new JsonObject()
-                    .put("isManual", controller.getIsManual())
-                    .put("status", controller.getStatus().toString())
-                    .put("valveValue", controller.getValveValue());
 
-                    serialComm.sendMessageToArduino(cmd.encode());
-                    Thread.sleep(3000); 
+                    serialComm.sendMessageToArduino("CUS," + systemController.getSystemStatus().toString() + "," + systemController.getValveValue() + "," + systemController.getWl());
+                    // serialComm.sendMessageToArduino("CUS," + systemController.getSystemStatus().toString() + "," + systemController.getValveValue() + "," + 88);
+                    Thread.sleep(1000); 
+                    
                 } catch (InterruptedException ignored) {}
             }
         });
         tx.setDaemon(true);
+        tx.setName("SERIAL-TX");
         tx.start();
 
+
+
+
+        // ---------- RX: riceve stringhe ----------
         // Thread che legge e stampa tutto ciò che arriva
-        // TODO: salvare la modalita' (se arduino la cambia cambiala)
-        // TODO: se siamo in manual, prendi per vero il comando da arduino
+        // Arrivano:
+            // "systemState"
+            // "connectionState"
+            // "valveValue"
         Thread rx = new Thread(() -> {
             while (true) {
                 try {
                     if (serialComm.isMsgAvailable()) {
                         String msg = serialComm.receiveMessageFromArduino();
-                        if (msg == null || msg.isBlank()) continue;
-                        if (msg != null) System.out.println("SERIAL RX: " + msg);
+                        if (msg != null) msg = msg.trim();
 
-                        // Arduino deve mandare JSON valido e terminare con \n.1
-                        JsonObject rep = new JsonObject(msg); // msg deve essere JSON valido
-
-                        // valveValue riportato da Arduino (feedback)
-                        if (rep.containsKey("valveValue")) {
-                            Integer reportedValve = rep.getInteger("valveValue");
-                            if (reportedValve != null) {
-
-                                if (controller.getIsManual()) {
-                                    // 🔴 MANUAL: Arduino comanda davvero
-                                    controller.setValveValueFromDashboard(reportedValve);
-                                    System.out.println("Valve set from Arduino (MANUAL): " + reportedValve);
-                                } else {
-                                    // 🟡 AUTO: solo verifica
-                                    int expectedValve = controller.getValveValue();
-                                    if (reportedValve != expectedValve) {
-                                        System.err.println(
-                                            "Valve mismatch in AUTO: reported=" + reportedValve +
-                                            " expected=" + expectedValve
-                                        );
-                                    }
-                                }
-                            }
+                        if (msg == null || msg.isEmpty()) {
+                            continue;
                         }
 
-                        // mode
-                        //TODO: meglio se non cambiamo qui lo stato...
-                        if (rep.containsKey("mode")) {
-                            String mode = rep.getString("mode");
-                            if (mode != null) {
-                                controller.setIsManual(!"auto".equalsIgnoreCase(mode));
-                                //TODO: meglio quello stoott
-                                // if (mode != null) controller.setArduinoModeReported(mode);
-                                System.out.println("Arduino mode: " + rep.getString("mode"));
-                            } 
+                        systemController.resetLastArduinoConnection();
+                        System.out.println("SERIAL RX: " + msg);
+
+
+                        // Caso A: formato CSV "state,conn,valve"
+                        if (msg.contains(",") && msg.split(",").length == 3) {
                             
+                            String[] parts = msg.split(",", 3);
+                            String arMode = parts[0].trim();     //SystemState: MANUAL_LOCAL / MANUAL_REMOTE / AUTOMATIC
+                            String arConn = parts[1].trim();     // COnnectionState CONNECTED / UNCONNECTED
+                            String arValveStr = parts[2].trim(); // ValveValue 0..100
+
+                            // valve feedback
+                            try {
+                                if (!lastSystemStatusReceived[0].equals(arMode.trim())) {   // fai cose solo se lo stato è stato aggiornato
+                                    if (arMode.startsWith("MANUAL_LOCAL")) {
+                                        systemController.setSystemStatus(SystemStatus.MANUAL_LOCAL);
+                                        lastSystemStatusReceived[0] = "MANUAL_LOCAL";
+                                        
+                                    } else if (arMode.startsWith("MANUAL_REMOTE")) {
+                                        // systemController.setSystemStatus(SystemStatus.MANUAL_REMOTE);
+                                        lastSystemStatusReceived[0] = "MANUAL_REMOTE";
+                                        
+                                    } else if (arMode.startsWith("AUTO")) {
+                                        // systemController.setSystemStatus(SystemStatus.AUTOMATIC);
+                                        lastSystemStatusReceived[0] = "AUTO";
+                                    }
+                                }
+                                
+                                System.out.println("Mode sent from Arduino:" + arMode);
+
+                                // if (arMode.startsWith("UNCONNECTED")) {
+                                //     controller.setStatus(Status.UNCONNECTED);
+                                // }
+
+                                if (arConn != null) {
+                                    System.out.println("ConnectionStatus sent from Arduino:" + arConn);
+                                }
+                                
+
+
+
+                                int reportedValve = Integer.parseInt(arValveStr);
+
+                                if (systemController.getIsManual()) {
+                                    systemController.setValveValue(reportedValve);
+                                    System.out.println("Valve set from Arduino (MANUAL): " + reportedValve);
+                                }
+                            } catch (NumberFormatException ignored) {}
+
+                            // mode feedback (opzionale: di solito non far comandare Arduino il mode del CUS)
+                            System.out.println("Arduino mode=" + arMode + " conn=" + arConn);
                         }
                         
                     }
-                    controller.updatePolicy();
-                    controller.updateConnectivity();
+                    systemController.updatePolicy();
+                    
                     Thread.sleep(20);
                 } catch (Exception e) {
-                    System.err.println("Serial RX error: " + e.getMessage());
+                    System.err.println("SERIAL-RX error: " + e.getMessage());
+                    try { Thread.sleep(200); } catch (InterruptedException ignored) {}
                 }
             }
         });
         rx.setDaemon(true);
+        rx.setName("SERIAL-RX");
         rx.start();
 
         System.out.println("System started: HTTP on " + httpPort + ", MQTT connected, Serial test running");

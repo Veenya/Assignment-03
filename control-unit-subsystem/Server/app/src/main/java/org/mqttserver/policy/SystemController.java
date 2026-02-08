@@ -1,52 +1,43 @@
 package org.mqttserver.policy;
 
-// import io.vertex.core.buffer.Buffer;
-import org.mqttserver.presentation.Status;
-import org.mqttserver.services.mqtt.Broker;
-
-import java.util.Map;
+import org.mqttserver.presentation.ArduinoConnectionStatus;
+import org.mqttserver.presentation.ESPConnectionStatus;
+import org.mqttserver.presentation.SystemStatus;
+import org.mqttserver.presentation.ValveStatus;
 
 public interface SystemController {
 
-    //TODO
-
-
-    /*
-    
-    3) Policy CUS: aggiorno status/valveCommand quando cambia wl o mode
-
-Due punti di trigger:
-
-ogni volta che cambia wl (da MQTT o seriale)
-
-e/o con un timer periodico (es. ogni 200ms)
-
-In automatico:
-
-calcolo status e quindi valveCommand (0/50/100) con la tua setValveValueAuto()
-
-In manuale:
-
-status = MANUAL, valveCommand = manualValveValue
-    
-    */
     void setWL(float wl);
+    void setValveValue(int valveValue);
+    
     //void setValveCommand(int val);
 
-    Status getStatus();
+    SystemStatus getSystemStatus();
+    ValveStatus getValveStatus();
+    ESPConnectionStatus getEspConnectionStatus();
+    ArduinoConnectionStatus getArduinoConnectionStatus();
+
     float getWl();
     int getValveValue();
     //int getValveCommand();
-    
 
-    void setValveValueFromDashboard(int valveValue);
-    Map<Status, Integer> getStatusValveValue();
+    void setSystemStatus(SystemStatus systemStatus);
+    void setValveStatus(ValveStatus valveStatus);
+    void setEspConnectionStatus(ESPConnectionStatus espConnStatus);
+    void setArduinoConnectionStatus(ArduinoConnectionStatus arduinoConnStatus);
 
-    void checkValveValue(String msg, Broker broker);
+    void setIsManualLocal();
+    void setIsManualRemote();
+    void setIsAutomatic();
 
-    void setIsManual(boolean isManual);
-    boolean getIsManual(); 
-    
-    void updateConnectivity();
+    void updateConnectivity(); // aggiorna gli stati di connessione dei device
     void updatePolicy(); // Calcola status/valveCommand, da fare uando arriva wl
+
+    boolean getIsManual();
+
+    boolean getIsManualLocal();
+    boolean getIsManualRemote();
+    boolean getIsAutomatic();
+    void resetLastArduinoConnection();
+    void resetLastESPConnection();
 }
