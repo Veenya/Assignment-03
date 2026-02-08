@@ -51,10 +51,15 @@ public class Main {
         SerialCommChannelImpl serialComm = new SerialCommChannelImpl(serialPort, 9600);
         
 
-        // Thread che manda PING ogni 3s
+        // Thread che manda
+        /*
+        Java Manda in JSON:
+            "isManual" (boolean)
+            "status" (String)
+            "valveValue" (int)
+        */
         Thread tx = new Thread(() -> {
             while (true) {
-                //serialComm.sendMessageToArduino("PING");
                 try { 
                     JsonObject cmd = new JsonObject()
                     .put("isManual", controller.getIsManual())
@@ -70,8 +75,11 @@ public class Main {
         tx.start();
 
         // Thread che legge e stampa tutto ciò che arriva
-        // TODO: salvare la modalita' (se arduino la cambia cambiala)
-        // TODO: se siamo in manual, prendi per vero il comando da arduino
+        /*
+        Java Riceve in JSON:
+            "valveValue"
+            "mode"
+        */
         Thread rx = new Thread(() -> {
             while (true) {
                 try {
