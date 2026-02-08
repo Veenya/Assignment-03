@@ -16,8 +16,11 @@ void CommunicationTask::tick() {
     }
 
     // 2) invia periodicamente lo stato corrente al DRU
-    lastStateUpdate = 0;
     now = millis();
+    if (now - lastStateUpdate >= STATE_UPDATE_PERIOD) {
+    lastStateUpdate = now;
+    pCommunicationCenter->notifyNewState();
+    }
 
     if (pCommunicationCenter && (now - lastStateUpdate >= STATE_UPDATE_PERIOD)) {
         lastStateUpdate = now;
