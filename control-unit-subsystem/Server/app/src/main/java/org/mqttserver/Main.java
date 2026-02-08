@@ -51,15 +51,22 @@ public class Main {
         SerialCommChannelImpl serialComm = new SerialCommChannelImpl(serialPort, 9600);
         
 
-        // Thread che manda PING ogni 3s
+        // Thread che manda
+        /*
+        Java Manda in JSON:
+            "isManual" (boolean)
+            "status" (String)
+            "valveValue" (int)
+            "wl" (float)
+        */
         Thread tx = new Thread(() -> {
             while (true) {
-                //serialComm.sendMessageToArduino("PING");
                 try { 
                     JsonObject cmd = new JsonObject()
                     .put("isManual", controller.getIsManual())
                     .put("status", controller.getStatus().toString())
-                    .put("valveValue", controller.getValveValue());
+                    .put("valveValue", controller.getValveValue())
+                    .put("wl", controller.getWl());
 
                     serialComm.sendMessageToArduino(cmd.encode());
                     Thread.sleep(3000); 
@@ -70,8 +77,11 @@ public class Main {
         tx.start();
 
         // Thread che legge e stampa tutto ciò che arriva
-        // TODO: salvare la modalita' (se arduino la cambia cambiala)
-        // TODO: se siamo in manual, prendi per vero il comando da arduino
+        /*
+        Java Riceve in JSON:
+            "valveValue"
+            "mode"
+        */
         Thread rx = new Thread(() -> {
             while (true) {
                 try {
@@ -80,7 +90,7 @@ public class Main {
                         if (msg == null || msg.isBlank()) continue;
                         if (msg != null) System.out.println("SERIAL RX: " + msg);
 
-                        // Arduino deve mandare JSON valido e terminare con \n.1
+                        // Arduino deve mandare JSON valido
                         JsonObject rep = new JsonObject(msg); // msg deve essere JSON valido
 
                         // valveValue riportato da Arduino (feedback)
@@ -89,11 +99,11 @@ public class Main {
                             if (reportedValve != null) {
 
                                 if (controller.getIsManual()) {
-                                    // 🔴 MANUAL: Arduino comanda davvero
+                                    // MANUAL: Arduino comanda davvero
                                     controller.setValveValueFromDashboard(reportedValve);
                                     System.out.println("Valve set from Arduino (MANUAL): " + reportedValve);
                                 } else {
-                                    // 🟡 AUTO: solo verifica
+                                    // AUTO: solo verifica
                                     int expectedValve = controller.getValveValue();
                                     if (reportedValve != expectedValve) {
                                         System.err.println(
@@ -106,12 +116,10 @@ public class Main {
                         }
 
                         // mode
-                        //TODO: meglio se non cambiamo qui lo stato...
                         if (rep.containsKey("mode")) {
                             String mode = rep.getString("mode");
                             if (mode != null) {
                                 controller.setIsManual(!"auto".equalsIgnoreCase(mode));
-                                //TODO: meglio quello stoott
                                 // if (mode != null) controller.setArduinoModeReported(mode);
                                 System.out.println("Arduino mode: " + rep.getString("mode"));
                             } 
