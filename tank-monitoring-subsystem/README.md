@@ -1,5 +1,4 @@
 
-
 ## Voltage Divider
 Per alimentare il sonar sono stati utilizzati la terra e il Vcc dell'arduino. Per non danneggiare l'ESP e quindi ottenere 3V è stato utilizzato un voltage divider. 
 
