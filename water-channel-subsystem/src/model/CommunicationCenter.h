@@ -1,8 +1,10 @@
 #ifndef __COMMUNICATIONCENTER__
 #define __COMMUNICATIONCENTER__
 
+#include <ArduinoJson.h>
 #include "HWPlatform.h"
 #include "config.h"
+#include "kernel/MsgService.h"
 #include "model/Controller.h"
 
 /*
@@ -29,9 +31,11 @@ public:
     void init();
 
     // Send current state to CUS
+    void notifyNewStateStr();
     void notifyNewState();
 
     // Read messages from CUS + update UNCONNECTED based on timeout
+    void syncStr();
     void sync();
 
     // Optional flags for tasks
@@ -42,12 +46,13 @@ private:
     Controller* pController;
     String lastSystemStateReceived;
 
-
     bool newModeCmd;
     bool newValveCmd;
 
     unsigned long lastRxMs;
     unsigned long T2_MS;
+    JsonDocument stateDoc;
+    String jsonBuffer;
 };
 
 #endif

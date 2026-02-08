@@ -1,6 +1,7 @@
 #ifndef __MSGSERVICE__
 #define __MSGSERVICE__
 
+#include <ArduinoJson.h>
 #include "Arduino.h"
 
 class Msg {
@@ -21,16 +22,14 @@ class MsgServiceClass {
 public:
     Msg* currentMsg;
     bool msgAvailable;
-
     void init();
-
     bool isMsgAvailable();
     Msg* receiveMsg();
-
     bool isMsgAvailable(Pattern& pattern);
     Msg* receiveMsg(Pattern& pattern);
-
     void sendMsg(const String& msg);
+    bool isJsonMsgAvailable();               // true se c'è un messaggio e sembra JSON valido
+    JsonDocument * receiveJson(); // restituisce documento parsato (o nullptr)
 };
 
 extern MsgServiceClass MsgService;

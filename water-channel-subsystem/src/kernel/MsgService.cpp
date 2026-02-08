@@ -61,3 +61,40 @@ Msg* MsgServiceClass::receiveMsg(Pattern& pattern) {
         return NULL;
     }
 }
+
+bool MsgServiceClass::isJsonMsgAvailable() {
+    if (!msgAvailable) return false;
+    if (currentMsg == nullptr) return false;
+    
+    String c = currentMsg->getContent();
+    c.trim();
+    // Controllo molto basilare: inizia con { e finisce con }
+    return c.length() >= 2 && c[0] == '{' && c[c.length()-1] == '}';
+}
+
+JsonDocument* MsgServiceClass::receiveJson() {
+    if (!isJsonMsgAvailable()) return nullptr;
+
+    String jsonStr = currentMsg->getContent();
+    JsonDocument* doc = new JsonDocument();
+
+    DeserializationError error = deserializeJson(*doc, jsonStr);
+
+    if (error) {
+        Serial.print("JSON parse error: ");
+        Serial.println(error.c_str());
+        delete doc;
+        msgAvailable = false;
+        currentMsg = nullptr;
+        content = "";
+        return nullptr;
+    }
+
+    // consuma il messaggio
+    delete currentMsg;
+    currentMsg = nullptr;
+    msgAvailable = false;
+    content = "";
+
+    return doc;
+}
