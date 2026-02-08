@@ -16,7 +16,7 @@ CommunicationCenter* pCommunicationCenter;
 
 void setup() {
     // Logger.log(":::::: Tank Controllering Subsystem ::::::");
-    Serial.begin(ESP_BAUD);
+    Serial.begin(ESP_BAUD); // TODO reintrodurre MsgService
     delay(200);
     Serial.println("\n=== ESP32 Setup ===\n");
     

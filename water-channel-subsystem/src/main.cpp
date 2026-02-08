@@ -8,6 +8,7 @@
 #include "tasks/CommunicationTask.h"
 #include "tasks/PotentiometerTask.h"
 #include "tasks/ControllerTask.h"
+#include "tasks/ButtonTask.h"
 
 Scheduler scheduler;
 HWPlatform* pHWPlatform;
@@ -17,6 +18,7 @@ CommunicationCenter* pCommunicationCenter;
 Task* pControllerTask;
 Task* pCommunicationTask;
 Task* pPotentiometerTask;
+Task* pButtonTask;
 
 void setup() {
     MsgService.init();
@@ -43,13 +45,16 @@ void setup() {
     pControllerTask = new ControllerTask(pController, pCommunicationCenter, pUserPanel); 
     pControllerTask->init(CONTROLLER_PERIOD);
 
+    pButtonTask = new ButtonTask(pController);
+    pButtonTask->init(BUTTON_PERIOD);
+
+
     scheduler.addTask(pCommunicationTask);
     scheduler.addTask(pPotentiometerTask);
     scheduler.addTask(pControllerTask);
+    scheduler.addTask(pButtonTask);
 }
 
 void loop() {
-    pController->syncButton();
     scheduler.schedule();
-    Serial.println("Loop");
 }

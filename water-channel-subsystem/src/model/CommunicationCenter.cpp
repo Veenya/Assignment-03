@@ -36,6 +36,8 @@ void CommunicationCenter::notifyNewState() {
     
     connectionStateStr = (pController->getConnectivity() == ConnectivityState::UNCONNECTED) ? "UNCONNECTED" : "CONNECTED";
 
+    // TODO Serve il connection state?
+
     MsgService.sendMsg(
         systemStateStr + "," +
         connectionStateStr + "," +
