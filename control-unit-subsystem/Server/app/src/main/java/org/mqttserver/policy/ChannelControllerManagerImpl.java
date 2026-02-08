@@ -25,7 +25,7 @@ public class ChannelControllerManagerImpl implements ChannelControllerManager {
                this.broker.getMqttServer().toString() + " ON PORT: "  + this.broker.getMqttServer().actualPort());
     }
     @Override
-    public void sendMessageToArduino(Status status) {
+    public void sendMessageToArduino(SystemStatus status) {
         MessageToArduino messageToArduino = new MessageToArduino(status);
         this.serialCommChannel.sendMessageToArduino(JSONUtils.objectToJson(messageToArduino));
     }

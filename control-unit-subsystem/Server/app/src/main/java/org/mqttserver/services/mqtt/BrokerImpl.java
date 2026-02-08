@@ -21,12 +21,13 @@ public class BrokerImpl implements Broker {
     // List of connected MQTT clients subscribed to somehting
     private final List<MqttEndpoint> subscribedClients = new ArrayList<>();
     // the logic state holder (stores water level, frequency, mode...)
-    private final SystemController systemController = new SystemControllerImpl();
+    private SystemController systemController;
     // Vertx MQTT server instance
     protected MqttServer mqttServer = null;
 
     // Creates Vertx and MQTT server object
-    public BrokerImpl() {
+    public BrokerImpl(SystemController systemController) {
+        this.systemController = systemController;
         this.vertx = Vertx.vertx();
         this.mqttServer = this.createMqttServer(this.vertx);
 
@@ -62,10 +63,12 @@ public class BrokerImpl implements Broker {
                     if (Objects.equals(message.topicName(), "/sensor/wl")) {
                         System.out.println("Value received from ESP32 (sensor): " + messageObj.getWL());
                         this.updateSystem(messageObj.getWL());
+                        this.systemController.resetLastESPConnection();
                     }
                 } else {
                     System.out.println("The Sensor has been sent the message but OPERATOR set the system in manual mode, waiting for automatic mode...");
                     this.updateSystem(messageObj.getWL());
+                    this.systemController.resetLastESPConnection();
                 }
             });
             endpoint.disconnectHandler(disconnect -> System.out.println("Client disconnected"));

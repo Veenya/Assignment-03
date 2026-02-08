@@ -1,6 +1,7 @@
 from flask import Flask
 import dash
 from dash import html, dcc, no_update
+from dash import callback_context
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 from collections import deque
@@ -32,10 +33,18 @@ app.layout = html.Div([
         html.Div([dcc.Graph(id="valve-level-graph")], style={"width": "50%", "display": "inline-block"}),
     ]),
 
-    html.Div(id="status-display", style={"textAlign": "center", "fontSize": "24px"}),
+    html.Div(id="system-status-display", style={"textAlign": "center", "fontSize": "24px"}),
+    html.Div(id="arduino-status-display", style={"textAlign": "center", "fontSize": "24px"}),
+    html.Div(id="esp-status-display", style={"textAlign": "center", "fontSize": "24px"}),
 
     html.Div([
-        html.H3("Set Valve Value"),
+        html.H3("Set Mode"),
+
+        html.Button("MANUAL_LOCAL", id="btn-manual-local", n_clicks=0, style={"marginRight": "8px"}),
+        html.Button("MANUAL_REMOTE", id="btn-manual-remote", n_clicks=0, style={"marginRight": "8px"}),
+        html.Button("AUTO", id="btn-auto", n_clicks=0, style={"marginRight": "16px"}),
+
+        html.H3("Set Valve Value", style={"marginLeft": "16px"}),
         html.Div([
             dcc.Slider(
                 id="valveValue",
@@ -45,13 +54,14 @@ app.layout = html.Div([
             )
         ], style={"width": "33%", "display": "inline-block"}),
 
-        html.Button("Set Valve Value", id="send-valveValue", n_clicks=0, style={"marginRight": "1%"}, disabled=False),
-        html.Button("Switch to AUTO", id="send-autoMode", n_clicks=0),
+        html.Button("Set Valve Value", id="send-valveValue", n_clicks=0, style={"marginLeft": "12px"}, disabled=False),
     ], style={"display": "flex", "justifyContent": "center", "alignItems": "center"}),
+
 
     # store single “latest snapshot” from backend
     dcc.Store(id="latest-store", data=None),
-    dcc.Store(id="mode-store", data={"isManual": True}),
+    dcc.Store(id="mode-store", data={"mode": "MANUAL_LOCAL"}),
+
 ])
 
 # ---------- 1) SINGLE POLL: only this callback does HTTP GET ----------
@@ -98,32 +108,44 @@ def push_history(latest):
 app.layout.children.append(html.Div(id="dummy-history", style={"display": "none"}))
 
 # ---------- 3) MODE button: POST /api/mode ----------
+
 @app.callback(
     Output("mode-store", "data"),
-    Output("send-autoMode", "children"),
     Output("conn-status", "children", allow_duplicate=True),
-    Input("send-autoMode", "n_clicks"),
+    Input("btn-manual-local", "n_clicks"),
+    Input("btn-manual-remote", "n_clicks"),
+    Input("btn-auto", "n_clicks"),
     State("mode-store", "data"),
     prevent_initial_call=True
 )
-def toggle_mode(n_clicks, store):
-    is_manual = bool(store.get("isManual", True))
-    new_is_manual = not is_manual
+def set_mode(n_local, n_remote, n_auto, store):
+    ctx = callback_context
+    if not ctx.triggered:
+        return store, no_update
+
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if triggered_id == "btn-manual-local":
+        new_mode = "MANUAL_LOCAL"
+    elif triggered_id == "btn-manual-remote":
+        new_mode = "MANUAL_REMOTE"
+    elif triggered_id == "btn-auto":
+        new_mode = "AUTO"
 
     try:
         r = requests.post(
             f"{CUS_BASE}/api/mode",
-            json={"isManual": new_is_manual},
+            json={"mode": new_mode},
             timeout=REQ_TIMEOUT
         )
-        # 200 ok expected
         if r.status_code >= 400:
-            return store, no_update, f"POST /api/mode failed: {r.status_code} {r.text}"
+            return store, f"POST /api/mode failed: {r.status_code} {r.text}"
     except Exception as e:
-        return store, no_update, f"POST /api/mode error: {e}"
+        return store, f"POST /api/mode error: {e}"
 
-    button_text = "Switch to AUTO" if new_is_manual else "Switch to MANUAL"
-    return {"isManual": new_is_manual}, button_text, ""
+    return {"mode": new_mode}, ""
+
+
 
 # ---------- 4) VALVE button: POST /api/valve ----------
 @app.callback(
@@ -134,8 +156,8 @@ def toggle_mode(n_clicks, store):
     prevent_initial_call=True
 )
 def send_valve_value(n_clicks, valve_value, mode_store):
-    # avoid calling backend in AUTO
-    if not bool(mode_store.get("isManual", True)):
+    mode = (mode_store or {}).get("mode", "MANUAL_LOCAL")
+    if not mode.startswith("MANUAL"):
         return "Valve can be set only in MANUAL mode"
 
     try:
@@ -159,7 +181,8 @@ def send_valve_value(n_clicks, valve_value, mode_store):
     Input("latest-store", "data"),
 )
 def update_manual_ui(mode_store, latest):
-    is_manual = bool(mode_store.get("isManual", True))
+    mode = (mode_store or {}).get("mode", "MANUAL_LOCAL")
+    is_manual = mode.startswith("MANUAL")
 
     if is_manual:
         return False, False, no_update
@@ -194,11 +217,25 @@ def update_valve(_latest):
         layout=go.Layout(title="Valvola", xaxis={"title": "Ora"}, yaxis={"title": "valveValue"})
     )
 
-@app.callback(Output("status-display", "children"),
+@app.callback(Output("system-status-display", "children"),
               Input("latest-store", "data"))
-def update_status(latest):
+def update_system_status(latest):
     if latest:
-        return f'Stato del sistema: {latest.get("status", "?")}'
+        return f'Stato del sistema: {latest.get("systemStatus", "?")}'
+    return "In attesa di dati..."
+
+@app.callback(Output("arduino-status-display", "children"),
+              Input("latest-store", "data"))
+def update_arduino_status(latest):
+    if latest:
+        return f'Connessione Arduino: {latest.get("arduinoConnectionStatus", "?")}'
+    return "In attesa di dati..."
+
+@app.callback(Output("esp-status-display", "children"),
+              Input("latest-store", "data"))
+def update_esp_status(latest):
+    if latest:
+        return f'Connessione ESP: {latest.get("espConnectionStatus", "?")}'
     return "In attesa di dati..."
 
 if __name__ == "__main__":

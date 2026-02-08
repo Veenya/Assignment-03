@@ -10,14 +10,13 @@ import org.mqttserver.policy.SystemController;
 import org.mqttserver.policy.SystemControllerImpl;
 import org.mqttserver.presentation.JSONUtils;
 import org.mqttserver.presentation.MessageFromSensor;
-//import org.mqttserver.presentation.MessageToSensor;
 
 public class RemoteBrokerClientImpl {
 
     // Topic (coerenti e riusabili)
     private static final String TOPIC_WL = "/sensor/wl";
 
-    private final SystemController systemController = new SystemControllerImpl();
+    private SystemControllerImpl systemController;
 
     private final Vertx vertx;        // motore asincrono che gestisce eventi (connessioni, messaggi, callback)
     private final MqttClient client;  // client MQTT vero e proprio
@@ -26,10 +25,11 @@ public class RemoteBrokerClientImpl {
     private final int port;
     private final String clientId;
 
-    public RemoteBrokerClientImpl(String host, int port, String clientId) {
+    public RemoteBrokerClientImpl(String host, int port, String clientId, SystemControllerImpl systemController) {
         this.host = host;
         this.port = port;
         this.clientId = clientId;
+        this.systemController = systemController;
 
         this.vertx = Vertx.vertx();
 
@@ -95,6 +95,7 @@ public class RemoteBrokerClientImpl {
         String payloadStr = safePayloadToString(message.payload());
 
         System.out.println("MQTT IN topic=" + topic + " payload=" + payloadStr);
+        systemController.resetLastESPConnection();
 
         // Qui gestisci SOLO quello che ti interessa (WL)
         if (!TOPIC_WL.equals(topic)) {
